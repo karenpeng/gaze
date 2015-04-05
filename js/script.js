@@ -95,8 +95,35 @@ function drawLoop() {
   requestAnimFrame(drawLoop);
   overlayCC.clearRect(0, 0, 400, 300);
   //psrElement.innerHTML = "score :" + ctrack.getScore().toFixed(4);
+
   if (ctrack.getCurrentPosition()) {
-    ctrack.draw(overlay);
+    var positions = ctrack.getCurrentPosition();
+    // ctrack.draw(overlay);
+    overlayCC.fillStyle = 'white';
+    overlayCC.fillRect(positions[27][0], positions[27][1], 3, 3);
+    overlayCC.fillRect(positions[32][0], positions[32][1], 3, 3);
+
+    overlayCC.fillStyle = 'green';
+
+    overlayCC.fillRect(positions[63][0], positions[63][1], 3, 3);
+    overlayCC.fillRect(positions[24][0], positions[24][1], 3, 3);
+    overlayCC.fillRect(positions[64][0], positions[64][1], 3, 3);
+    overlayCC.fillRect(positions[23][0], positions[23][1], 1, 1);
+
+    overlayCC.fillRect(positions[66][0], positions[66][1], 3, 3);
+    overlayCC.fillRect(positions[26][0], positions[26][1], 3, 3);
+    overlayCC.fillRect(positions[65][0], positions[65][1], 3, 3);
+    overlayCC.fillRect(positions[25][0], positions[25][1], 1, 1);
+
+    overlayCC.fillRect(positions[68][0], positions[68][1], 3, 3);
+    overlayCC.fillRect(positions[29][0], positions[29][1], 3, 3);
+    overlayCC.fillRect(positions[67][0], positions[67][1], 3, 3);
+    overlayCC.fillRect(positions[30][0], positions[30][1], 1, 1);
+
+    overlayCC.fillRect(positions[69][0], positions[69][1], 3, 3);
+    overlayCC.fillRect(positions[31][0], positions[31][1], 3, 3);
+    overlayCC.fillRect(positions[70][0], positions[70][1], 3, 3);
+    overlayCC.fillRect(positions[28][0], positions[28][1], 1, 1);
   }
 }
 
