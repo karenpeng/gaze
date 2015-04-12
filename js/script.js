@@ -52,44 +52,88 @@ function startVideo() {
   // start tracking
   ctrack.start(vid);
   // start loop to draw face
+  init();
   drawLoop();
 }
 
 var frameCount = 0;
 var lastPosL = [];
 var lastPosR = [];
+var historyL = [];
+var historyR = [];
+
+function init(){
+  overlayCC.translate(-overlay.width, 0);
+  overlayCC.scale(-1, 1);
+}
+
+function viewPort(pos){
+  var x = pos[0] / videoel.width * overlay.width;
+  var y = pos[1] / videoel.height * overlay.height;
+  return [x, y];
+}
 
 function drawLoop() {
   requestAnimFrame(drawLoop);
 
   frameCount ++;
 
-  overlayCC.clearRect(0, 0, 400, 300);
+  overlayCC.clearRect(0, 0, overlay.width, overlay.height);
+
+  //overlayCC.save();
+  overlayCC.translate(overlay.width, 0);
+  overlayCC.scale(-1, 1);
+  overlayCC.drawImage(vid, 0, 0, overlay.width, overlay.height);
+  //overlayCC.restore();
   //psrElement.innerHTML = "score :" + ctrack.getScore().toFixed(4);
+
 
   if (ctrack.getCurrentPosition()) {
     var positions = ctrack.getCurrentPosition();
 
-    if(frameCount % 30 === 0){
-      lastPosL = positions[27];
-      lastPosR = positions[32];
+    // if(frameCount % 30 === 0){
+    //   lastPosL = positions[27];
+    //   lastPosR = positions[32];
+    // }
+
+    if(frameCount < 60){
+      historyL.push(positions[27]);
+      historyR.push(positions[32]);
+    }else{
+      lastPosL = historyL.shift();
+      lastPosR = historyR.shift();
+      historyL.push(positions[27]);
+      historyR.push(positions[32]);
+    }
+
+    if(frameCount % 2 === 0){
+      if(blickDetection(positions[27], lastPosL)){
+        console.log('left blink!');
+      }
+      if(blickDetection(positions[32], lastPosR)){
+        console.log('right blink!');
+      }
     }
 
     overlayCC.strokeStyle = 'red';
     overlayCC.beginPath();
-    overlayCC.moveTo(lastPosL[0], lastPosL[1]);
-    overlayCC.lineTo(positions[27][0], positions[27][1]);
+    var a = viewPort(lastPosL);
+    overlayCC.moveTo(a[0], a[1]);
+    var b = viewPort(positions[27]);
+    overlayCC.lineTo(b[0], b[1]);
     overlayCC.stroke();
 
     overlayCC.beginPath();
-    overlayCC.moveTo(lastPosR[0], lastPosR[1]);
-    overlayCC.lineTo(positions[32][0], positions[32][1]);
+    var a1 = viewPort(lastPosR);
+    overlayCC.moveTo(a1[0], a1[1]);
+    var b1 = viewPort(positions[32]);
+    overlayCC.lineTo(b1[0], b1[1]);
     overlayCC.stroke();
 
     // ctrack.draw(overlay);
     overlayCC.fillStyle = 'white';
-    overlayCC.fillRect(positions[27][0], positions[27][1], 3, 3);
-    overlayCC.fillRect(positions[32][0], positions[32][1], 3, 3);
+    overlayCC.fillRect(b[0], b[1], 3, 3);
+    overlayCC.fillRect(b1[0], b1[1], 3, 3);
 
     // overlayCC.fillStyle = 'green';
 
@@ -115,11 +159,18 @@ function drawLoop() {
   }
 }
 
+//how could you keep track of the past??
 function blickDetection(pos, lastPos){
-  // if(lastPos - pos){
-
-  // }
+  if( pos[1] - lastPos[1] > videoel.height * 0.006 && pos[1] - lastPos[1] < videoel.height * 0.03){
+    if( Math.abs( pos[0] - lastPos[0]) < videoel.width * 0.01){
+      return true;
+    }
+    return false;
+  }
+  return false;
 }
+
+
 
 // update stats on every iteration
 document.addEventListener('clmtrackrIteration', function(event) {
