@@ -1,0 +1,24 @@
+{
+  "name": "gaze",
+  "version": "1.0.0",
+  "description": "gaze ====",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/karenpeng/gaze.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/karenpeng/gaze/issues"
+  },
+  "homepage": "https://github.com/karenpeng/gaze",
+  "dependencies": {
+    "ejs": "^2.3.1",
+    "express": "^4.12.3",
+    "inherits": "^2.0.1"
+  }
+}
