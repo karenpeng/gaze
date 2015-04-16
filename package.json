@@ -17,8 +17,10 @@
   },
   "homepage": "https://github.com/karenpeng/gaze",
   "dependencies": {
+    "body-parser": "^1.12.3",
     "ejs": "^2.3.1",
     "express": "^4.12.3",
-    "inherits": "^2.0.1"
+    "inherits": "^2.0.1",
+    "mongoose": "^4.0.1"
   }
 }

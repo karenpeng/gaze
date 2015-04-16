@@ -23,189 +23,10 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],"/Users/karen/Documents/my_project/gaze/public/js/checking.js":[function(require,module,exports){
-var inherits = require('inherits');
-var EventEmitter = require('events').EventEmitter;
-inherits(Widget, EventEmitter);
-
-function Widget(){
-  if (!(this instanceof Widget)) return new Widget();
-}
-Widget.prototype.yell = function(tag, data) {
-  this.emit((tag+'blink'), data);
-};
-
-var vid = document.getElementById('videoel');
-var overlay = document.getElementById('overlay');
-var overlayCC = overlay.getContext('2d');
-
-var ctrack = new clm.tracker({useWebGL : true});
-ctrack.init(pModel);
-
-function enablestart() {
-  var startbutton = document.getElementById('startbutton');
-  startbutton.value = "start";
-  startbutton.disabled = null;
-}
-
-function initCam(){
-  navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-  window.URL = window.URL || window.webkitURL || window.msURL || window.mozURL;
-  // check for camerasupport
-  if (navigator.getUserMedia) {
-    // set up stream
-
-    var videoSelector = {video : true};
-    if (window.navigator.appVersion.match(/Chrome\/(.*?) /)) {
-      var chromeVersion = parseInt(window.navigator.appVersion.match(/Chrome\/(\d+)\./)[1], 10);
-      if (chromeVersion < 20) {
-        videoSelector = "video";
-      }
-    };
-
-    navigator.getUserMedia(videoSelector, function( stream ) {
-      if (vid.mozCaptureStream) {
-        vid.mozSrcObject = stream;
-      } else {
-        vid.src = (window.URL && window.URL.createObjectURL(stream)) || stream;
-      }
-      vid.play();
-    }, function() {
-      alert("There was some problem trying to fetch video from your webcam, using a fallback video instead.");
-    });
-  } else {
-    alert("Your browser does not seem to support getUserMedia, using a fallback video instead.");
-  }
-  vid.addEventListener('canplay', enablestart, false);
-}
-
-initCam();
-
-function startVideo() {
-  // start video
-  vid.play();
-  // start tracking
-  ctrack.start(vid);
-  // start loop to draw face
-  drawLoop();
-}
-
-document.getElementById('startbutton').onclick = function(){
-  startVideo();
-}
-
-var frameCount = 0;
-var lastPosL = [];
-var lastPosR = [];
-var historyL = [];
-var historyR = [];
-var positions = [];
-positions[27] = [0, 0];
-positions[32] = [0, 0];
-
-function drawLoop() {
-  requestAnimFrame(drawLoop);
-
-  frameCount ++;
-
-  //overlayCC.clearRect(0, 0, overlay.width, overlay.height);
-
-  //overlayCC.save();
-  //overlayCC.translate(overlay.width, 0);
-  //overlayCC.scale(-1, 1);
-  //overlayCC.drawImage(vid, 0, 0, overlay.width, overlay.height);
-  //overlayCC.restore();
-  //psrElement.innerHTML = "score :" + ctrack.getScore().toFixed(4);
-  //console.log(overlayCC);
-
-  if (ctrack.getCurrentPosition()) {
-    positions = ctrack.getCurrentPosition();
-
-    if(frameCount < 30){
-      historyL.push(positions[27]);
-      historyR.push(positions[32]);
-    }else{
-      lastPosL = historyL.shift();
-      lastPosR = historyR.shift();
-      historyL.push(positions[27]);
-      historyR.push(positions[32]);
-
-      //if(frameCount % 2 === 0){
-        curL = blickDetection(positions[27], lastPosL);
-        if(preL !== curL){
-          if(curL){
-            emitL.yell('L', positions[27]);
-          }
-          preL = curL;
-        }
-        curR = blickDetection(positions[32], lastPosR)
-        if(preR !== curR){
-          if(curR){
-            emitR.yell('R', positions[32]);
-          }
-          preR = curR;
-        }
-      }
-    //}
-
-    // overlayCC.strokeStyle = 'red';
-    // overlayCC.beginPath();
-    // var a = lastPosL;
-    // overlayCC.moveTo(a[0], a[1]);
-    // var b = positions[27];
-    // overlayCC.lineTo(b[0], b[1]);
-    // overlayCC.stroke();
-
-    // overlayCC.beginPath();
-    // var a1 = lastPosR;
-    // overlayCC.moveTo(a1[0], a1[1]);
-    // var b1 = positions[32];
-    // overlayCC.lineTo(b1[0], b1[1]);
-    // overlayCC.stroke();
-
-    // // ctrack.draw(overlay);
-    // overlayCC.fillStyle = 'white';
-    // overlayCC.fillRect(b[0], b[1], 3, 3);
-    // overlayCC.fillRect(b1[0], b1[1], 3, 3);
-
-    // //overlayCC.restore();
-    // overlayCC.fillStyle = 'red';
-    // overlayCC.fillRect(0, 0, xMax, yMax);
-    // overlayCC.fillRect(videoel.width - xMax, videoel.height - yMin, xMax, yMin);
-
-    exports.posL = positions[27];
-    exports.posR = positions[32];
-  }
-}
-
-//just some magic number
-var yMax = videoel.height * 0.025;
-var yMin = videoel.height * 0.009;
-var xMax = videoel.width * 0.02;
-var preL = false;
-var preR = false;
-var curL = false;
-var curR = false;
-var emitL = new Widget();
-var emitR = new Widget();
-
-function blickDetection(pos, lastPos){
-  if( pos[1] - lastPos[1] > yMin && pos[1] - lastPos[1] < yMax){
-    if( Math.abs( pos[0] - lastPos[0]) < xMax){
-      return true;
-    }
-    return false;
-  }
-  return false;
-}
-
-exports.emitR = emitR;
-exports.emitL = emitL;
-
-},{"events":"/usr/local/lib/node_modules/watchify/node_modules/browserify/node_modules/events/events.js","inherits":"/Users/karen/Documents/my_project/gaze/node_modules/inherits/inherits_browser.js"}],"/Users/karen/Documents/my_project/gaze/public/js/index.js":[function(require,module,exports){
-var checking = require('./checking.js');
-var emitL = checking.emitL;
-var emitR = checking.emitR;
+},{}],"/Users/karen/Documents/my_project/gaze/public/js/index.js":[function(require,module,exports){
+var track = require('./track.js');
+var blinkL = track.blinkL;
+var blinkR = track.blinkR;
 
 var container, stats;
 
@@ -246,6 +67,8 @@ var rawL, rawR;
 var w = document.getElementById('videoel').width;
 var h = document.getElementById('videoel').height;
 
+var nothing, goToHell, onParticleCreatedL, onParticleCreatedR;
+
 init();
 animate();
 
@@ -257,8 +80,8 @@ function viewport(pos){
 
 function init() {
 
-  // rawL = require('./checking.js').posL;
-  // rawR = require('./checking.js').posR;
+  // rawL = require('./track.js').posL;
+  // rawR = require('./track.js').posR;
 
   // eyeL = viewport(rawL);
   // eyeR = viewport(rawR);
@@ -449,7 +272,7 @@ function init() {
 
   };
 
-  var onParticleCreatedL = function( p ) {
+  onParticleCreatedL = function( p ) {
 
     var position = p.position;
     p.target.position = position;
@@ -491,7 +314,7 @@ function init() {
   };
 
 
-  var onParticleCreatedR = function( p ) {
+  onParticleCreatedR = function( p ) {
 
     var position = p.position;
     p.target.position = position;
@@ -598,7 +421,7 @@ function init() {
   sparksEmitter2.start();
 
 
-  emitL.on('Lblink', function(){
+  blinkL.on('Lblink', function(){
     //console.log('left blink!');
     sparksEmitter2.addCallback( "created", nothing );
     sparksEmitter2.addCallback( "updated", goToHell );
@@ -608,7 +431,7 @@ function init() {
     }, Math.random()*100 + 200);
   });
 
-  emitR.on('Rblink', function(){
+  blinkR.on('Rblink', function(){
     //console.log('right blink!');
     sparksEmitter1.addCallback( "created", nothing );
     sparksEmitter1.addCallback( "updated", goToHell );
@@ -618,11 +441,12 @@ function init() {
     }, Math.random()*100 + 200);
   });
 
-  function nothing(){
+
+  nothing = function(){
     //do nothing
   }
 
-  function goToHell(particle){
+  goToHell = function(particle){
     particle.age += 1;
   };
 
@@ -776,6 +600,9 @@ function animate() {
 
 }
 
+var records = [];
+var recordCountDown = 0;
+var progress = document.getElementById('progress');
 
 function render() {
 
@@ -789,10 +616,33 @@ function render() {
   // Pretty cool effect if you enable this
   // particleCloud.rotation.y += 0.05;
 
-  group.rotation.y += ( targetRotation - group.rotation.y ) * 0.05;
+  //group.rotation.y += ( targetRotation - group.rotation.y ) * 0.05;
 
-  rawL = require('./checking.js').posL;
-  rawR = require('./checking.js').posR;
+  rawL = require('./track.js').posL;
+  rawR = require('./track.js').posR;
+  var largeMove = require('./track.js').largeMove;
+
+  // if(largeMove){
+  //   sparksEmitter1.addCallback( "created", nothing );
+  //   sparksEmitter1.addCallback( "updated", goToHell );
+  //   sparksEmitter2.addCallback( "created", nothing );
+  //   sparksEmitter2.addCallback( "updated", goToHell );
+  // }else{
+  //   sparksEmitter1.addCallback( "updated", nothing);
+  //   sparksEmitter1.addCallback( "created", onParticleCreatedL );
+  //   sparksEmitter2.addCallback( "updated", nothing);
+  //   sparksEmitter2.addCallback( "created", onParticleCreatedL );
+  // }
+
+  if(rawL !== undefined && rawR !== undefined){
+    recordCountDown ++;
+  }
+
+  if(recordCountDown > 100 && recordCountDown <= 1000 ){
+    records.push([rawL, rawR]);
+    var w = window.innerWidth * (recordCountDown - 100) / 800;
+    document.getElementById('progress').setAttribute('style', 'width:'+  w + 'px;');
+  }
 
   if(rawL !== undefined){
     eyeL = viewport(rawL);
@@ -808,9 +658,189 @@ function render() {
 
 }
 
+},{"./track.js":"/Users/karen/Documents/my_project/gaze/public/js/track.js"}],"/Users/karen/Documents/my_project/gaze/public/js/track.js":[function(require,module,exports){
+var inherits = require('inherits');
+var EventEmitter = require('events').EventEmitter;
+inherits(Widget, EventEmitter);
+
+function Widget(){
+  if (!(this instanceof Widget)) return new Widget();
+}
+Widget.prototype.yell = function(tag, data) {
+  this.emit((tag+'blink'), data);
+};
+
+var vid = document.getElementById('videoel');
+
+var ctrack = new clm.tracker({useWebGL : true});
+ctrack.init(pModel);
+
+//just some magic number
+var yMax = videoel.height * 0.025;
+var yMin = videoel.height * 0.009;
+var xMax = videoel.width * 0.02;
+var preL = false;
+var preR = false;
+var curL = false;
+var curR = false;
+var blinkL = new Widget();
+var blinkR = new Widget();
+exports.largeMove = false;
+var moveTredshold = (videoel.width * 0.2) * (videoel.width * 0.2);
 
 
-},{"./checking.js":"/Users/karen/Documents/my_project/gaze/public/js/checking.js"}],"/usr/local/lib/node_modules/watchify/node_modules/browserify/node_modules/events/events.js":[function(require,module,exports){
+function initCam(){
+  navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+  window.URL = window.URL || window.webkitURL || window.msURL || window.mozURL;
+  // check for camerasupport
+  if (navigator.getUserMedia) {
+    // set up stream
+
+    var videoSelector = {video : true};
+    if (window.navigator.appVersion.match(/Chrome\/(.*?) /)) {
+      var chromeVersion = parseInt(window.navigator.appVersion.match(/Chrome\/(\d+)\./)[1], 10);
+      if (chromeVersion < 20) {
+        videoSelector = "video";
+      }
+    };
+
+    navigator.getUserMedia(videoSelector, function( stream ) {
+      if (vid.mozCaptureStream) {
+        vid.mozSrcObject = stream;
+      } else {
+        vid.src = (window.URL && window.URL.createObjectURL(stream)) || stream;
+      }
+      vid.play();
+    }, function() {
+      alert("There was some problem trying to fetch video from your webcam, using a fallback video instead.");
+    });
+  } else {
+    alert("Your browser does not seem to support getUserMedia, using a fallback video instead.");
+  }
+  vid.addEventListener('canplay', startVideo, false);
+}
+
+initCam();
+
+function startVideo() {
+  // start video
+  vid.play();
+  // start tracking
+  ctrack.start(vid);
+  // start loop to draw face
+  drawLoop();
+}
+
+var frameCount = 0;
+var lastPosL = [];
+var lastPosR = [];
+var historyL = [];
+var historyR = [];
+var positions = [];
+positions[27] = [0, 0];
+positions[32] = [0, 0];
+
+function drawLoop() {
+  requestAnimFrame(drawLoop);
+
+  frameCount ++;
+
+  //overlayCC.clearRect(0, 0, overlay.width, overlay.height);
+
+  //overlayCC.save();
+  //overlayCC.translate(overlay.width, 0);
+  //overlayCC.scale(-1, 1);
+  //overlayCC.drawImage(vid, 0, 0, overlay.width, overlay.height);
+  //overlayCC.restore();
+  //psrElement.innerHTML = "score :" + ctrack.getScore().toFixed(4);
+  //console.log(overlayCC);
+
+  if (ctrack.getCurrentPosition()) {
+    positions = ctrack.getCurrentPosition();
+
+    if(frameCount < 30){
+      historyL.push(positions[27]);
+      historyR.push(positions[32]);
+    }else{
+      lastPosL = historyL.shift();
+      lastPosR = historyR.shift();
+      historyL.push(positions[27]);
+      historyR.push(positions[32]);
+
+      //if(frameCount % 2 === 0){
+        curL = blickDetection(positions[27], lastPosL);
+        if(preL !== curL){
+          if(curL){
+            blinkL.yell('L', positions[27]);
+          }
+          preL = curL;
+        }
+        curR = blickDetection(positions[32], lastPosR)
+        if(preR !== curR){
+          if(curR){
+            blinkR.yell('R', positions[32]);
+          }
+          preR = curR;
+        }
+
+        exports.largeMove = (largeMoveDetection(positions[27], lastPosL) || largeMoveDetection(positions[32], lastPosR));
+      }
+    //}
+
+    // overlayCC.strokeStyle = 'red';
+    // overlayCC.beginPath();
+    // var a = lastPosL;
+    // overlayCC.moveTo(a[0], a[1]);
+    // var b = positions[27];
+    // overlayCC.lineTo(b[0], b[1]);
+    // overlayCC.stroke();
+
+    // overlayCC.beginPath();
+    // var a1 = lastPosR;
+    // overlayCC.moveTo(a1[0], a1[1]);
+    // var b1 = positions[32];
+    // overlayCC.lineTo(b1[0], b1[1]);
+    // overlayCC.stroke();
+
+    // // ctrack.draw(overlay);
+    // overlayCC.fillStyle = 'white';
+    // overlayCC.fillRect(b[0], b[1], 3, 3);
+    // overlayCC.fillRect(b1[0], b1[1], 3, 3);
+
+    // //overlayCC.restore();
+    // overlayCC.fillStyle = 'red';
+    // overlayCC.fillRect(0, 0, xMax, yMax);
+    // overlayCC.fillRect(videoel.width - xMax, videoel.height - yMin, xMax, yMin);
+
+    exports.posL = positions[27];
+    exports.posR = positions[32];
+  }
+}
+
+
+function blickDetection(pos, lastPos){
+  if( pos[1] - lastPos[1] > yMin && pos[1] - lastPos[1] < yMax){
+    if( Math.abs( pos[0] - lastPos[0]) < xMax){
+      return true;
+    }
+    return false;
+  }
+  return false;
+}
+
+
+function largeMoveDetection(pos, lastPos){
+  var dis = (pos[0] - lastPos[0]) * (pos[0] - lastPos[0]) + (pos[1] - lastPos[1]) * (pos[1] - lastPos[1]);
+  if(dis > moveTredshold){
+    return true;
+  }
+  return false;
+}
+
+exports.blinkR = blinkR;
+exports.blinkL = blinkL;
+
+},{"events":"/usr/local/lib/node_modules/watchify/node_modules/browserify/node_modules/events/events.js","inherits":"/Users/karen/Documents/my_project/gaze/node_modules/inherits/inherits_browser.js"}],"/usr/local/lib/node_modules/watchify/node_modules/browserify/node_modules/events/events.js":[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a

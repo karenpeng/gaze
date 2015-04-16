@@ -10,17 +10,23 @@ Widget.prototype.yell = function(tag, data) {
 };
 
 var vid = document.getElementById('videoel');
-var overlay = document.getElementById('overlay');
-var overlayCC = overlay.getContext('2d');
 
 var ctrack = new clm.tracker({useWebGL : true});
 ctrack.init(pModel);
 
-function enablestart() {
-  var startbutton = document.getElementById('startbutton');
-  startbutton.value = "start";
-  startbutton.disabled = null;
-}
+//just some magic number
+var yMax = videoel.height * 0.025;
+var yMin = videoel.height * 0.009;
+var xMax = videoel.width * 0.02;
+var preL = false;
+var preR = false;
+var curL = false;
+var curR = false;
+var blinkL = new Widget();
+var blinkR = new Widget();
+exports.largeMove = false;
+var moveTredshold = (videoel.width * 0.2) * (videoel.width * 0.2);
+
 
 function initCam(){
   navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
@@ -50,7 +56,7 @@ function initCam(){
   } else {
     alert("Your browser does not seem to support getUserMedia, using a fallback video instead.");
   }
-  vid.addEventListener('canplay', enablestart, false);
+  vid.addEventListener('canplay', startVideo, false);
 }
 
 initCam();
@@ -62,10 +68,6 @@ function startVideo() {
   ctrack.start(vid);
   // start loop to draw face
   drawLoop();
-}
-
-document.getElementById('startbutton').onclick = function(){
-  startVideo();
 }
 
 var frameCount = 0;
@@ -108,17 +110,19 @@ function drawLoop() {
         curL = blickDetection(positions[27], lastPosL);
         if(preL !== curL){
           if(curL){
-            emitL.yell('L', positions[27]);
+            blinkL.yell('L', positions[27]);
           }
           preL = curL;
         }
         curR = blickDetection(positions[32], lastPosR)
         if(preR !== curR){
           if(curR){
-            emitR.yell('R', positions[32]);
+            blinkR.yell('R', positions[32]);
           }
           preR = curR;
         }
+
+        exports.largeMove = (largeMoveDetection(positions[27], lastPosL) || largeMoveDetection(positions[32], lastPosR));
       }
     //}
 
@@ -152,16 +156,6 @@ function drawLoop() {
   }
 }
 
-//just some magic number
-var yMax = videoel.height * 0.025;
-var yMin = videoel.height * 0.009;
-var xMax = videoel.width * 0.02;
-var preL = false;
-var preR = false;
-var curL = false;
-var curR = false;
-var emitL = new Widget();
-var emitR = new Widget();
 
 function blickDetection(pos, lastPos){
   if( pos[1] - lastPos[1] > yMin && pos[1] - lastPos[1] < yMax){
@@ -173,5 +167,14 @@ function blickDetection(pos, lastPos){
   return false;
 }
 
-exports.emitR = emitR;
-exports.emitL = emitL;
+
+function largeMoveDetection(pos, lastPos){
+  var dis = (pos[0] - lastPos[0]) * (pos[0] - lastPos[0]) + (pos[1] - lastPos[1]) * (pos[1] - lastPos[1]);
+  if(dis > moveTredshold){
+    return true;
+  }
+  return false;
+}
+
+exports.blinkR = blinkR;
+exports.blinkL = blinkL;

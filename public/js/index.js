@@ -1,6 +1,6 @@
-var checking = require('./checking.js');
-var emitL = checking.emitL;
-var emitR = checking.emitR;
+var track = require('./track.js');
+var blinkL = track.blinkL;
+var blinkR = track.blinkR;
 
 var container, stats;
 
@@ -41,6 +41,8 @@ var rawL, rawR;
 var w = document.getElementById('videoel').width;
 var h = document.getElementById('videoel').height;
 
+var nothing, goToHell, onParticleCreatedL, onParticleCreatedR;
+
 init();
 animate();
 
@@ -52,8 +54,8 @@ function viewport(pos){
 
 function init() {
 
-  // rawL = require('./checking.js').posL;
-  // rawR = require('./checking.js').posR;
+  // rawL = require('./track.js').posL;
+  // rawR = require('./track.js').posR;
 
   // eyeL = viewport(rawL);
   // eyeR = viewport(rawR);
@@ -244,7 +246,7 @@ function init() {
 
   };
 
-  var onParticleCreatedL = function( p ) {
+  onParticleCreatedL = function( p ) {
 
     var position = p.position;
     p.target.position = position;
@@ -286,7 +288,7 @@ function init() {
   };
 
 
-  var onParticleCreatedR = function( p ) {
+  onParticleCreatedR = function( p ) {
 
     var position = p.position;
     p.target.position = position;
@@ -393,7 +395,7 @@ function init() {
   sparksEmitter2.start();
 
 
-  emitL.on('Lblink', function(){
+  blinkL.on('Lblink', function(){
     //console.log('left blink!');
     sparksEmitter2.addCallback( "created", nothing );
     sparksEmitter2.addCallback( "updated", goToHell );
@@ -403,7 +405,7 @@ function init() {
     }, Math.random()*100 + 200);
   });
 
-  emitR.on('Rblink', function(){
+  blinkR.on('Rblink', function(){
     //console.log('right blink!');
     sparksEmitter1.addCallback( "created", nothing );
     sparksEmitter1.addCallback( "updated", goToHell );
@@ -413,11 +415,12 @@ function init() {
     }, Math.random()*100 + 200);
   });
 
-  function nothing(){
+
+  nothing = function(){
     //do nothing
   }
 
-  function goToHell(particle){
+  goToHell = function(particle){
     particle.age += 1;
   };
 
@@ -571,6 +574,9 @@ function animate() {
 
 }
 
+var records = [];
+var recordCountDown = 0;
+var progress = document.getElementById('progress');
 
 function render() {
 
@@ -584,10 +590,33 @@ function render() {
   // Pretty cool effect if you enable this
   // particleCloud.rotation.y += 0.05;
 
-  group.rotation.y += ( targetRotation - group.rotation.y ) * 0.05;
+  //group.rotation.y += ( targetRotation - group.rotation.y ) * 0.05;
 
-  rawL = require('./checking.js').posL;
-  rawR = require('./checking.js').posR;
+  rawL = require('./track.js').posL;
+  rawR = require('./track.js').posR;
+  var largeMove = require('./track.js').largeMove;
+
+  // if(largeMove){
+  //   sparksEmitter1.addCallback( "created", nothing );
+  //   sparksEmitter1.addCallback( "updated", goToHell );
+  //   sparksEmitter2.addCallback( "created", nothing );
+  //   sparksEmitter2.addCallback( "updated", goToHell );
+  // }else{
+  //   sparksEmitter1.addCallback( "updated", nothing);
+  //   sparksEmitter1.addCallback( "created", onParticleCreatedL );
+  //   sparksEmitter2.addCallback( "updated", nothing);
+  //   sparksEmitter2.addCallback( "created", onParticleCreatedL );
+  // }
+
+  if(rawL !== undefined && rawR !== undefined){
+    recordCountDown ++;
+  }
+
+  if(recordCountDown > 100 && recordCountDown <= 1000 ){
+    records.push([rawL, rawR]);
+    var w = window.innerWidth * (recordCountDown - 100) / 800;
+    document.getElementById('progress').setAttribute('style', 'width:'+  w + 'px;');
+  }
 
   if(rawL !== undefined){
     eyeL = viewport(rawL);
@@ -602,5 +631,3 @@ function render() {
   composer.render( 0.1 );
 
 }
-
-
