@@ -20,9 +20,6 @@ app.use(bodyParser.json({
   limit: '50mb'
 }));
 
-// parse application/json
-app.use(bodyParser.json())
-
 app.set('views', __dirname + '/views');
 app.engine('.html', ejs.__express);
 app.set('view engine', 'html');
