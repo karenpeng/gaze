@@ -112,14 +112,14 @@ function drawLoop() {
       curL = blickDetection(positions[27], lastPosL);
       if(preL !== curL){
         if(curL){
-          blinkL.yell('L', positions[27]);
+          blinkL.yell('L');
         }
         preL = curL;
       }
       curR = blickDetection(positions[32], lastPosR)
       if(preR !== curR){
         if(curR){
-          blinkR.yell('R', positions[32]);
+          blinkR.yell('R');
         }
 
         preR = curR;
@@ -156,8 +156,8 @@ function drawLoop() {
     // overlayCC.fillRect(0, 0, xMax, yMax);
     // overlayCC.fillRect(videoel.width - xMax, videoel.height - yMin, xMax, yMin);
 
-    exports.posL = positions[27];
-    exports.posR = positions[32];
+    exports.posL = [Math.round(positions[27][0]), Math.round(positions[27][1])];
+    exports.posR = [Math.round(positions[32][0]), Math.round(positions[32][1])];
   }
 }
 

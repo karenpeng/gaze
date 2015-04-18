@@ -47,8 +47,8 @@ var keepLooping = true;
 var nothing, goToHell, onParticleCreatedL, onParticleCreatedR;
 
 function viewport(pos){
-  var x =  ((w - pos[0]) / w * 2 - 1) *  windowHalfX * 1.4;
-  var y =  (-pos[1] / h * 2 + 1) *  windowHalfX * 1.5;
+  var x =  ((w - pos[0]) / w * 2 - 1) *  windowHalfX * 1.2;
+  var y =  (-pos[1] / h * 2 + 1) *  windowHalfX * 1.4;
   return [x, y];
 }
 
@@ -666,11 +666,11 @@ function render() {
       url: '/upload',
       method: 'POST',
       //contentType means the data you sent
-      contentType: 'application/json',
+      //contentType: 'application/json; charset=utf-8',
       data: {
-        eye: records
+        eye: JSON.stringify(records)
       },
-      dataType: 'json',
+      //dataType: 'json',
       error: function (err) {
         console.error(err);
       },
