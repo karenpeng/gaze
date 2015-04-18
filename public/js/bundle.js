@@ -73,8 +73,8 @@ init();
 animate();
 
 function viewport(pos){
-  var x =  ((w - pos[0]) / w * 2 - 1) *  windowHalfX;
-  var y =  (-pos[1] / h * 2 + 1) *  windowHalfY;
+  var x =  ((w - pos[0]) / w * 2 - 1) *  windowHalfX * 1.4;
+  var y =  (-pos[1] / h * 2 + 1) *  windowHalfX * 1.5;
   return [x, y];
 }
 
@@ -601,8 +601,11 @@ function animate() {
 }
 
 var records = [];
+var othersRecords = [];
 var recordCountDown = 0;
 var progress = document.getElementById('progress');
+var beginRecord = 120;
+var endRecord = 600;
 
 function render() {
 
@@ -622,34 +625,80 @@ function render() {
   rawR = require('./track.js').posR;
   var largeMove = require('./track.js').largeMove;
 
-  // if(largeMove){
-  //   sparksEmitter1.addCallback( "created", nothing );
-  //   sparksEmitter1.addCallback( "updated", goToHell );
-  //   sparksEmitter2.addCallback( "created", nothing );
-  //   sparksEmitter2.addCallback( "updated", goToHell );
-  // }else{
-  //   sparksEmitter1.addCallback( "updated", nothing);
-  //   sparksEmitter1.addCallback( "created", onParticleCreatedL );
-  //   sparksEmitter2.addCallback( "updated", nothing);
-  //   sparksEmitter2.addCallback( "created", onParticleCreatedL );
-  // }
+  if(largeMove){
+    console.log('too much!')
+    sparksEmitter1.addCallback( "created", nothing );
+    sparksEmitter1.addCallback( "updated", goToHell );
+    sparksEmitter2.addCallback( "created", nothing );
+    sparksEmitter2.addCallback( "updated", goToHell );
+  }else{
+    sparksEmitter1.addCallback( "updated", nothing);
+    sparksEmitter1.addCallback( "created", onParticleCreatedL );
+    sparksEmitter2.addCallback( "updated", nothing);
+    sparksEmitter2.addCallback( "created", onParticleCreatedR );
+  }
 
   if(rawL !== undefined && rawR !== undefined){
     recordCountDown ++;
   }
 
-  if(recordCountDown > 100 && recordCountDown <= 1000 ){
+  if(recordCountDown > beginRecord && recordCountDown <= endRecord ){
     records.push([rawL, rawR]);
-    var w = window.innerWidth * (recordCountDown - 100) / 800;
+    var w = window.innerWidth * (recordCountDown - beginRecord) / (endRecord - beginRecord * 2);
     document.getElementById('progress').setAttribute('style', 'width:'+  w + 'px;');
+  }
+
+  // if(recordCountDown === beginRecord){
+  //   $.ajax({
+  //     url: '/previous',
+  //     method: 'GET',
+  //     dataType: 'json',
+  //     error: function (err) {
+  //       console.error(err);
+  //     },
+  //     success: function (data) {
+  //       othersRecords = data.eye;
+  //       console.log(othersRecords);
+  //     }
+  //   });
+  // }
+
+  if(recordCountDown === endRecord){
+    console.log(records.length);
+    $.ajax({
+      url: '/upload',
+      method: 'POST',
+      data: {
+        eye: records
+      },
+      dataType: 'json',
+      error: function (err) {
+        console.error(err);
+      },
+      success: function () {
+        console.log('(•ω•)');
+      }
+    });
   }
 
   if(rawL !== undefined){
     eyeL = viewport(rawL);
   }
   if(rawR !== undefined){
-   eyeR = viewport(rawR);
+    eyeR = viewport(rawR);
   }
+
+  // var dR = require('./track.js').dR;
+  // var dL = require('./track.js').dL;
+
+  // if( dR !== null){
+  //   sparksEmitter1.addAction( new SPARKS.Accelerate( 0, 0, 0 ) );
+  //   sparksEmitter1.addAction( new SPARKS.Accelerate( dR[0]*0.1, dR[1]*0.1, 0 ) );
+  // }
+  // if( dL !== null){
+  //   sparksEmitter2.addAction( new SPARKS.Accelerate( 0, 0, 0 ) );
+  //   sparksEmitter2.addAction( new SPARKS.Accelerate( dL[0]*0.1, dL[1]*0.1, 0 ) );
+  // }
 
   renderer.clear();
 
@@ -676,9 +725,9 @@ var ctrack = new clm.tracker({useWebGL : true});
 ctrack.init(pModel);
 
 //just some magic number
-var yMax = videoel.height * 0.025;
-var yMin = videoel.height * 0.009;
-var xMax = videoel.width * 0.02;
+var yMax = videoel.height * 0.03;
+var yMin = videoel.height * 0.008;
+var xMax = videoel.width * 0.03;
 var preL = false;
 var preR = false;
 var curL = false;
@@ -686,7 +735,7 @@ var curR = false;
 var blinkL = new Widget();
 var blinkR = new Widget();
 exports.largeMove = false;
-var moveTredshold = (videoel.width * 0.2) * (videoel.width * 0.2);
+var moveTredshold = (videoel.width * 0.16) * (videoel.width * 0.16);
 
 
 function initCam(){
@@ -739,6 +788,8 @@ var historyR = [];
 var positions = [];
 positions[27] = [0, 0];
 positions[32] = [0, 0];
+exports.dL = null;
+exports.dR = null;
 
 function drawLoop() {
   requestAnimFrame(drawLoop);
@@ -768,23 +819,26 @@ function drawLoop() {
       historyR.push(positions[32]);
 
       //if(frameCount % 2 === 0){
-        curL = blickDetection(positions[27], lastPosL);
-        if(preL !== curL){
-          if(curL){
-            blinkL.yell('L', positions[27]);
-          }
-          preL = curL;
+      curL = blickDetection(positions[27], lastPosL);
+      if(preL !== curL){
+        if(curL){
+          blinkL.yell('L', positions[27]);
         }
-        curR = blickDetection(positions[32], lastPosR)
-        if(preR !== curR){
-          if(curR){
-            blinkR.yell('R', positions[32]);
-          }
-          preR = curR;
+        preL = curL;
+      }
+      curR = blickDetection(positions[32], lastPosR)
+      if(preR !== curR){
+        if(curR){
+          blinkR.yell('R', positions[32]);
         }
 
-        exports.largeMove = (largeMoveDetection(positions[27], lastPosL) || largeMoveDetection(positions[32], lastPosR));
+        preR = curR;
       }
+
+    //exports.dL = [lastPosL[0] - positions[27][0], lastPosL[1] - positions[27][1]];
+    //exports.dR = [lastPosR[0] - positions[32][0], lastPosR[1] - positions[32][1]];
+    exports.largeMove = (largeMoveDetection(positions[27], lastPosL) || largeMoveDetection(positions[32], lastPosR));
+    }
     //}
 
     // overlayCC.strokeStyle = 'red';

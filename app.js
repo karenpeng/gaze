@@ -1,21 +1,21 @@
 var express = require('express');
 var app = express();
-var server = require('http').Server(app);
 
 var mongoose = require('mongoose');
 var config = require('./server/config.json');
 var Record = require('./server/model.js');
+
+var ejs = require('ejs');
 var bodyParser = require('body-parser');
 
 var port = process.env.PORT || config.port;
 
 var jsonParser = bodyParser.json();
 app.use(bodyParser.urlencoded({
-  limit: '50mb',
+  limit: '100mb',
   extended: true
 }));
 
-var ejs = require('ejs');
 app.set('views', __dirname + '/views');
 app.engine('.html', ejs.__express);
 app.set('view engine', 'html');
@@ -32,8 +32,31 @@ app.get('/', function (req, res) {
   res.render('index.html');
 });
 
-app.get('/gallery', function(req, res){
+app.get('/previous', function (req, res){
+ var query = {};
+  var selet = 'eye';
+  var option = {
+    limit: 1,
+    sort: {
+      "date": -1
+    }
+  };
+  Record.findOne(query, selet, option, function (err, data) {
+    if (err) {
+      return console.error(err);
+    }
+    res.send(data);
+  });
+});
+
+app.get('/gallery', function (req, res){
   res.render('gallery.html');
+});
+
+app.post('/upload', function (req, res){
+  var record = new Record();
+  record.eye = req.body.eye;
+  record.save();
 });
 
 app.listen(port, function () {

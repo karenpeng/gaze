@@ -15,9 +15,9 @@ var ctrack = new clm.tracker({useWebGL : true});
 ctrack.init(pModel);
 
 //just some magic number
-var yMax = videoel.height * 0.025;
-var yMin = videoel.height * 0.009;
-var xMax = videoel.width * 0.02;
+var yMax = videoel.height * 0.03;
+var yMin = videoel.height * 0.008;
+var xMax = videoel.width * 0.03;
 var preL = false;
 var preR = false;
 var curL = false;
@@ -25,7 +25,7 @@ var curR = false;
 var blinkL = new Widget();
 var blinkR = new Widget();
 exports.largeMove = false;
-var moveTredshold = (videoel.width * 0.2) * (videoel.width * 0.2);
+var moveTredshold = (videoel.width * 0.16) * (videoel.width * 0.16);
 
 
 function initCam(){
@@ -78,6 +78,8 @@ var historyR = [];
 var positions = [];
 positions[27] = [0, 0];
 positions[32] = [0, 0];
+exports.dL = null;
+exports.dR = null;
 
 function drawLoop() {
   requestAnimFrame(drawLoop);
@@ -107,23 +109,26 @@ function drawLoop() {
       historyR.push(positions[32]);
 
       //if(frameCount % 2 === 0){
-        curL = blickDetection(positions[27], lastPosL);
-        if(preL !== curL){
-          if(curL){
-            blinkL.yell('L', positions[27]);
-          }
-          preL = curL;
+      curL = blickDetection(positions[27], lastPosL);
+      if(preL !== curL){
+        if(curL){
+          blinkL.yell('L', positions[27]);
         }
-        curR = blickDetection(positions[32], lastPosR)
-        if(preR !== curR){
-          if(curR){
-            blinkR.yell('R', positions[32]);
-          }
-          preR = curR;
+        preL = curL;
+      }
+      curR = blickDetection(positions[32], lastPosR)
+      if(preR !== curR){
+        if(curR){
+          blinkR.yell('R', positions[32]);
         }
 
-        exports.largeMove = (largeMoveDetection(positions[27], lastPosL) || largeMoveDetection(positions[32], lastPosR));
+        preR = curR;
       }
+
+    //exports.dL = [lastPosL[0] - positions[27][0], lastPosL[1] - positions[27][1]];
+    //exports.dR = [lastPosR[0] - positions[32][0], lastPosR[1] - positions[32][1]];
+    exports.largeMove = (largeMoveDetection(positions[27], lastPosL) || largeMoveDetection(positions[32], lastPosR));
+    }
     //}
 
     // overlayCC.strokeStyle = 'red';
