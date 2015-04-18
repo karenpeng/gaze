@@ -11,15 +11,14 @@ var bodyParser = require('body-parser');
 var port = process.env.PORT || config.port;
 
 var bodyParser = require('body-parser');
+app.use(bodyParser.urlencoded({
+  limit: '50mb',
+  extended: true
+}));
 // create application/json parser
 app.use(bodyParser.json({
   limit: '50mb'
 }));
-
-// app.use(bodyParser.urlencoded({
-//   limit: '50mb',
-//   extended: true
-// }));
 
 // parse application/json
 app.use(bodyParser.json())
