@@ -647,6 +647,7 @@ function render() {
     $.ajax({
       url: '/previous',
       method: 'GET',
+      //dataType means the data you get
       dataType: 'json',
       error: function (err) {
         console.error(err);
@@ -664,10 +665,12 @@ function render() {
     $.ajax({
       url: '/upload',
       method: 'POST',
-      dataType: 'json',
+      //contentType means the data you sent
+      contentType: 'application/json',
       data: {
         eye: records
       },
+      dataType: 'json',
       error: function (err) {
         console.error(err);
       },

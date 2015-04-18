@@ -5,7 +5,6 @@ var mongoose = require('mongoose');
 var config = require('./server/config.json');
 var Record = require('./server/model.js');
 
-var ejs = require('ejs');
 var bodyParser = require('body-parser');
 
 var port = process.env.PORT || config.port;
@@ -13,7 +12,8 @@ var port = process.env.PORT || config.port;
 var bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({
   limit: '50mb',
-  extended: true
+  extended: true,
+  parameterLimit: 10000
 }));
 // create application/json parser
 app.use(bodyParser.json({
@@ -21,8 +21,7 @@ app.use(bodyParser.json({
 }));
 
 app.set('views', __dirname + '/views');
-app.engine('.html', ejs.__express);
-app.set('view engine', 'html');
+app.set('view engine', 'jade');
 app.use(express.static(__dirname + '/public'));
 
 mongoose.connect(config.db);
@@ -33,7 +32,7 @@ db.once('open', function callback() {
 });
 
 app.get('/', function (req, res) {
-  res.render('index.html');
+  res.render('index.jade');
 });
 
 app.get('/previous', function (req, res){
@@ -54,7 +53,7 @@ app.get('/previous', function (req, res){
 });
 
 app.get('/gallery', function (req, res){
-  res.render('gallery.html');
+  res.render('gallery.jade');
 });
 
 app.post('/upload', function (req, res){

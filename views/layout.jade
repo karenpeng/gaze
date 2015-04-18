@@ -1,0 +1,62 @@
+doctype html
+html(lang = 'en')
+  head
+    title = GAZE
+    meta(charset="utf-8")
+    link(rel="icon" href="./img/favicon.png" type="image/x-icon")
+    meta(name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0")
+    link(rel="stylesheet" type="text/css" href="./css/style.css")
+    block links
+  body
+    block doms
+    div(id="container")
+  script(type="text/javascript" src="./js/vendor/three/three.min.js")
+  script(type="text/javascript" src="./js/vendor/three/stats.min.js")
+  script(type="text/javascript" src="./js/vendor/three/tween.min.js")
+  script(type="text/javascript" src="./js/vendor/three/OrbitControls.js")
+  script(type="text/javascript" src="./js/vendor/three/Sparks.js")
+  script(type="text/javascript" src="./js/vendor/three/shaders/CopyShader.js")
+  script(type="text/javascript" src="./js/vendor/three/shaders/FilmShader.js")
+  script(type="text/javascript" src="./js/vendor/three/shaders/FocusShader.js")
+  script(type="text/javascript" src="./js/vendor/three/shaders/HorizontalBlurShader.js")
+  script(type="text/javascript" src="./js/vendor/three/shaders/TriangleBlurShader.js")
+  script(type="text/javascript" src="./js/vendor/three/shaders/VerticalBlurShader.js")
+  script(type="text/javascript" src="./js/vendor/three/postprocessing/EffectComposer.js")
+  script(type="text/javascript" src="./js/vendor/three/postprocessing/RenderPass.js")
+  script(type="text/javascript" src="./js/vendor/three/postprocessing/ShaderPass.js")
+  script(type="text/javascript" src="./js/vendor/three/postprocessing/MaskPass.js")
+  script(type="text/javascript" src="./js/vendor/three/postprocessing/BloomPass.js")
+  script(type="text/javascript" src="./js/vendor/three/postprocessing/FilmPass.js")
+  script(type="x-shader/x-vertext" id="vertexshader").
+    attribute float size;
+    attribute vec3 pcolor;
+
+    varying vec3 vColor;
+
+    void main() {
+
+      vColor = pcolor;
+
+      vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+
+      gl_PointSize = size * ( 200.0 / length( mvPosition.xyz ) );
+
+      gl_Position = projectionMatrix * mvPosition;
+
+    }
+  script(type="x-shader/x-fragment" id="fragmentshader").
+     uniform sampler2D texture;
+
+      varying vec3 vColor;
+
+      void main() {
+
+        vec4 outColor = texture2D( texture, gl_PointCoord );
+
+        gl_FragColor = outColor * vec4( vColor, 1.0 );
+
+      }
+  script(type="text/javascript" src="./js/vendor/jquery-1.11.2.min.js")
+  block scripts
+
+
