@@ -10,11 +10,19 @@ var bodyParser = require('body-parser');
 
 var port = process.env.PORT || config.port;
 
-var jsonParser = bodyParser.json();
-app.use(bodyParser.urlencoded({
-  limit: '100mb',
-  extended: true
+var bodyParser = require('body-parser');
+// create application/json parser
+app.use(bodyParser.json({
+  limit: '50mb'
 }));
+
+// app.use(bodyParser.urlencoded({
+//   limit: '50mb',
+//   extended: true
+// }));
+
+// parse application/json
+app.use(bodyParser.json())
 
 app.set('views', __dirname + '/views');
 app.engine('.html', ejs.__express);
@@ -57,6 +65,7 @@ app.post('/upload', function (req, res){
   var record = new Record();
   record.eye = req.body.eye;
   record.save();
+  res.send('saved:)');
 });
 
 app.listen(port, function () {

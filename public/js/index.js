@@ -41,10 +41,10 @@ var rawL, rawR;
 var w = document.getElementById('videoel').width;
 var h = document.getElementById('videoel').height;
 
-var nothing, goToHell, onParticleCreatedL, onParticleCreatedR;
+var frameCount = 0;
+var keepLooping = true;
 
-init();
-animate();
+var nothing, goToHell, onParticleCreatedL, onParticleCreatedR;
 
 function viewport(pos){
   var x =  ((w - pos[0]) / w * 2 - 1) *  windowHalfX * 1.4;
@@ -353,7 +353,7 @@ function init() {
   };
 
 
-  sparksEmitter1 = new SPARKS.Emitter( new SPARKS.SteadyCounter( 50 ) );
+  sparksEmitter1 = new SPARKS.Emitter( new SPARKS.SteadyCounter( 40 ) );
 
   emitterpos = new THREE.Vector3( 0, 0, 0 );
 
@@ -375,7 +375,7 @@ function init() {
 
   sparksEmitter1.start();
 
-  sparksEmitter2 = new SPARKS.Emitter( new SPARKS.SteadyCounter( 50 ) );
+  sparksEmitter2 = new SPARKS.Emitter( new SPARKS.SteadyCounter( 40 ) );
   sparksEmitter2.addInitializer( new SPARKS.Position( new SPARKS.PointZone( emitterpos ) ) );
   sparksEmitter2.addInitializer( new SPARKS.Lifetime( 0, 3 ));
   sparksEmitter2.addInitializer( new SPARKS.Target( null, setTargetParticle ) );
@@ -402,7 +402,7 @@ function init() {
     setTimeout(function(){
       sparksEmitter2.addCallback( "updated", nothing);
       sparksEmitter2.addCallback( "created", onParticleCreatedL );
-    }, Math.random()*100 + 200);
+    }, Math.random() * 120 + 60);
   });
 
   blinkR.on('Rblink', function(){
@@ -412,7 +412,7 @@ function init() {
     setTimeout(function(){
       sparksEmitter1.addCallback( "updated", nothing);
       sparksEmitter1.addCallback( "created", onParticleCreatedR );
-    }, Math.random()*100 + 200);
+    }, Math.random() * 120 + 60);
   });
 
 
@@ -433,7 +433,7 @@ function init() {
 
   stats = new Stats();
   stats.domElement.style.position = 'absolute';
-  stats.domElement.style.bottom = '0px';
+  stats.domElement.style.top = '0px';
   stats.domElement.style.left = '0px';
   container.appendChild( stats.domElement );
 
@@ -558,11 +558,13 @@ function onDocumentMouseMove( event ) {
 
 }
 
-//
-var frameCount = 0;
+
 function animate() {
 
-  requestAnimationFrame( animate );
+  if(keepLooping){
+    requestAnimationFrame( animate );
+  }
+
   frameCount ++;
 
   if(frameCount % 2 === 0){
@@ -578,8 +580,9 @@ var records = [];
 var othersRecords = [];
 var recordCountDown = 0;
 var progress = document.getElementById('progress');
-var beginRecord = 120;
+var beginRecord = 180;
 var endRecord = 600;
+var startOther = false;
 
 function render() {
 
@@ -600,7 +603,7 @@ function render() {
   var largeMove = require('./track.js').largeMove;
 
   if(largeMove){
-    console.log('too much!')
+    //console.log('too much!')
     sparksEmitter1.addCallback( "created", nothing );
     sparksEmitter1.addCallback( "updated", goToHell );
     sparksEmitter2.addCallback( "created", nothing );
@@ -616,36 +619,55 @@ function render() {
     recordCountDown ++;
   }
 
+
+  if(!startOther){
+    if(rawL !== undefined){
+      eyeL = viewport(rawL);
+    }
+    if(rawR !== undefined ){
+      eyeR = viewport(rawR);
+    }
+  }else{
+    if(othersRecords.length){
+      var eye = othersRecords.shift();
+      eyeL = viewport(eye[0]);
+      eyeR = viewport(eye[1]);
+    }else{
+      keepLooping = false;
+    }
+  }
+
   if(recordCountDown > beginRecord && recordCountDown <= endRecord ){
     records.push([rawL, rawR]);
-    var w = window.innerWidth * (recordCountDown - beginRecord) / (endRecord - beginRecord * 2);
+    var w = window.innerWidth * (recordCountDown - beginRecord) / (endRecord - beginRecord);
     document.getElementById('progress').setAttribute('style', 'width:'+  w + 'px;');
   }
 
-  // if(recordCountDown === beginRecord){
-  //   $.ajax({
-  //     url: '/previous',
-  //     method: 'GET',
-  //     dataType: 'json',
-  //     error: function (err) {
-  //       console.error(err);
-  //     },
-  //     success: function (data) {
-  //       othersRecords = data.eye;
-  //       console.log(othersRecords);
-  //     }
-  //   });
-  // }
+  if(recordCountDown === beginRecord){
+    $.ajax({
+      url: '/previous',
+      method: 'GET',
+      dataType: 'json',
+      error: function (err) {
+        console.error(err);
+      },
+      success: function (data) {
+        othersRecords = data.eye;
+        console.log(othersRecords);
+        startOther = true;
+      }
+    });
+  }
 
   if(recordCountDown === endRecord){
     console.log(records.length);
     $.ajax({
       url: '/upload',
       method: 'POST',
+      dataType: 'json',
       data: {
         eye: records
       },
-      dataType: 'json',
       error: function (err) {
         console.error(err);
       },
@@ -655,12 +677,6 @@ function render() {
     });
   }
 
-  if(rawL !== undefined){
-    eyeL = viewport(rawL);
-  }
-  if(rawR !== undefined){
-    eyeR = viewport(rawR);
-  }
 
   // var dR = require('./track.js').dR;
   // var dL = require('./track.js').dL;
@@ -680,3 +696,6 @@ function render() {
   composer.render( 0.1 );
 
 }
+
+init();
+animate();
