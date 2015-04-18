@@ -654,7 +654,7 @@ function render() {
       success: function (data) {
         othersRecords = data.eye;
         console.log(othersRecords);
-        startOther = true;
+        //startOther = true;
       }
     });
   }
