@@ -70,7 +70,15 @@ var h = document.getElementById('videoel').height;
 var frameCount = 0;
 var keepLooping = true;
 
-var nothing, goToHell, onParticleCreatedL, onParticleCreatedR;
+var nothing, goToHell, onParticleCreated;
+
+var records = [];
+var othersRecords = [];
+var recordCountDown = 0;
+var progress = document.getElementById('progress');
+var beginRecord = 180;
+var endRecord = 600;
+var startOther = false;
 
 function viewport(pos){
   var x =  ((w - pos[0]) / w * 2 - 1) *  windowHalfX * 1.2;
@@ -272,7 +280,7 @@ function init() {
 
   };
 
-  onParticleCreatedL = function( p ) {
+  onParticleCreated = function( p, eye ) {
 
     var position = p.position;
     p.target.position = position;
@@ -294,50 +302,17 @@ function init() {
       timeOnShapePath += 0.00035 * delta;
       if ( timeOnShapePath > 1 ) timeOnShapePath -= 1;
 
-      emitterpos.x = eyeL[0];
-      emitterpos.y = eyeL[1];
+    switch(eye){
+      case'R':
+        emitterpos.x = eyeR[0];
+        emitterpos.y = eyeR[1];
+        break;
+      case'L':
+        emitterpos.x = eyeL[0];
+        emitterpos.y = eyeL[1];
+        break;
+    }
 
-      // pointLight.position.copy( emitterpos );
-      pointLight.position.x = emitterpos.x;
-      pointLight.position.y = emitterpos.y;
-      pointLight.position.z = 100;
-
-      particles.vertices[ target ] = p.position;
-
-      values_color[ target ].setHSL( hue, 0.6, 0.1 );
-
-      pointLight.color.setHSL( hue, 0.5, 0.8 );
-
-
-    };
-
-  };
-
-
-  onParticleCreatedR = function( p ) {
-
-    var position = p.position;
-    p.target.position = position;
-
-    var target = p.target;
-
-    if ( target ) {
-
-      // console.log(target,particles.vertices[target]);
-      // values_size[target]
-      // values_color[target]
-
-      hue += 0.0003 * delta;
-      if ( hue < 0.6 ) hue += 0.6;
-      if ( hue > 0.7 ) hue -= 0.7;
-
-      // TODO Create a PointOnShape Action/Zone in the particle engine
-
-      timeOnShapePath += 0.00035 * delta;
-      if ( timeOnShapePath > 1 ) timeOnShapePath -= 1;
-
-      emitterpos.x = eyeR[0];
-      emitterpos.y = eyeR[1];
 
       // pointLight.position.copy( emitterpos );
       pointLight.position.x = emitterpos.x;
@@ -378,58 +353,49 @@ function init() {
 
   };
 
+function configEmitter(emitter, eye){
 
-  sparksEmitter1 = new SPARKS.Emitter( new SPARKS.SteadyCounter( 40 ) );
+  emitter = new SPARKS.Emitter( new SPARKS.SteadyCounter( 40 ) );
+  console.log(emitter)
 
   emitterpos = new THREE.Vector3( 0, 0, 0 );
 
-  sparksEmitter1.addInitializer( new SPARKS.Position( new SPARKS.PointZone( emitterpos ) ) );
-  sparksEmitter1.addInitializer( new SPARKS.Lifetime( 0, 3 ));
-  sparksEmitter1.addInitializer( new SPARKS.Target( null, setTargetParticle ) );
+  emitter.addInitializer( new SPARKS.Position( new SPARKS.PointZone( emitterpos ) ) );
+  emitter.addInitializer( new SPARKS.Lifetime( 0, 3 ));
+  emitter.addInitializer( new SPARKS.Target( null, setTargetParticle ) );
 
 
-  sparksEmitter1.addInitializer( new SPARKS.Velocity( new SPARKS.PointZone( new THREE.Vector3( 0, -5, 1 ) ) ) );
+  emitter.addInitializer( new SPARKS.Velocity( new SPARKS.PointZone( new THREE.Vector3( 0, -5, 1 ) ) ) );
 
-  sparksEmitter1.addAction( new SPARKS.Age(TWEEN.Easing.Quartic.In) );
+  emitter.addAction( new SPARKS.Age(TWEEN.Easing.Quartic.In) );
   //sparksEmitter.addAction( new SPARKS.Age() );
-  sparksEmitter1.addAction( new SPARKS.Accelerate( Math.random() * -(10), 0, -20 ) );
-  sparksEmitter1.addAction( new SPARKS.Move() );
-  sparksEmitter1.addAction( new SPARKS.RandomDrift( 200, 10, 300 ) );
 
-  sparksEmitter1.addCallback( "created", onParticleCreatedR );
-  sparksEmitter1.addCallback( "dead", onParticleDead );
-
-  sparksEmitter1.start();
-
-  sparksEmitter2 = new SPARKS.Emitter( new SPARKS.SteadyCounter( 40 ) );
-  sparksEmitter2.addInitializer( new SPARKS.Position( new SPARKS.PointZone( emitterpos ) ) );
-  sparksEmitter2.addInitializer( new SPARKS.Lifetime( 0, 3 ));
-  sparksEmitter2.addInitializer( new SPARKS.Target( null, setTargetParticle ) );
+  emitter.addAction( new SPARKS.Move() );
+  emitter.addAction( new SPARKS.RandomDrift( 200, 10, 300 ) );
 
 
-  sparksEmitter2.addInitializer( new SPARKS.Velocity( new SPARKS.PointZone( new THREE.Vector3( 0, -5, 1 ) ) ) );
+  emitter.addCallback( "dead", onParticleDead );
 
-  sparksEmitter2.addAction( new SPARKS.Age(TWEEN.Easing.Quartic.In) );
-  //sparksEmitter.addAction( new SPARKS.Age() );
-  sparksEmitter2.addAction( new SPARKS.Accelerate( Math.random() * 10, 0, -20 ) );
-  sparksEmitter2.addAction( new SPARKS.Move() );
-  sparksEmitter2.addAction( new SPARKS.RandomDrift( 200, 10, 300 ) );
+  switch(eye){
+    case'R':
+      emitter.addAction( new SPARKS.Accelerate( Math.random() * -(10), 0, -20 ) );
+      emitter.addCallback( "created", function(p){
+        onParticleCreated('R', p)
+      });
+    break;
+    case'L':
+      emitter.addAction( new SPARKS.Accelerate( Math.random() * 10, 0, -20 ) );
+      emitter.addCallback( "created", function(p){
+        onParticleCreated('L', p)
+      });
+    break;
+  }
+    emitter.start();
+  }
 
-  sparksEmitter2.addCallback( "created", onParticleCreatedL );
-  sparksEmitter2.addCallback( "dead", onParticleDead );
-
-  sparksEmitter2.start();
-
-
-  blinkL.on('Lblink', function(){
-    //console.log('left blink!');
-    sparksEmitter2.addCallback( "created", nothing );
-    sparksEmitter2.addCallback( "updated", goToHell );
-    setTimeout(function(){
-      sparksEmitter2.addCallback( "updated", nothing);
-      sparksEmitter2.addCallback( "created", onParticleCreatedL );
-    }, Math.random() * 120 + 60);
-  });
+  configEmitter(sparksEmitter1, 'R');
+  console.log(sparksEmitter1);
+  configEmitter(sparksEmitter2, 'L');
 
   blinkR.on('Rblink', function(){
     //console.log('right blink!');
@@ -437,7 +403,21 @@ function init() {
     sparksEmitter1.addCallback( "updated", goToHell );
     setTimeout(function(){
       sparksEmitter1.addCallback( "updated", nothing);
-      sparksEmitter1.addCallback( "created", onParticleCreatedR );
+      sparksEmitter1.addCallback( "created", function(p){
+        onParticleCreated(p, 'R');
+      });
+    }, Math.random() * 120 + 60);
+  });
+
+  blinkL.on('Lblink', function(){
+    //console.log('left blink!');
+    sparksEmitter2.addCallback( "created", nothing );
+    sparksEmitter2.addCallback( "updated", goToHell );
+    setTimeout(function(){
+      sparksEmitter2.addCallback( "updated", nothing);
+      sparksEmitter2.addCallback( "created", function(p){
+        onParticleCreated(p, 'L');
+      });
     }, Math.random() * 120 + 60);
   });
 
@@ -602,13 +582,7 @@ function animate() {
 
 }
 
-var records = [];
-var othersRecords = [];
-var recordCountDown = 0;
-var progress = document.getElementById('progress');
-var beginRecord = 180;
-var endRecord = 600;
-var startOther = false;
+
 
 function render() {
 
@@ -636,9 +610,13 @@ function render() {
     sparksEmitter2.addCallback( "updated", goToHell );
   }else{
     sparksEmitter1.addCallback( "updated", nothing);
-    sparksEmitter1.addCallback( "created", onParticleCreatedL );
+    sparksEmitter1.addCallback( "created", function(p){
+      onParticleCreated(p, 'L')
+    });
     sparksEmitter2.addCallback( "updated", nothing);
-    sparksEmitter2.addCallback( "created", onParticleCreatedR );
+    sparksEmitter2.addCallback( "created", function(p){
+      onParticleCreated(p, 'R')
+    } );
   }
 
   if(rawL !== undefined && rawR !== undefined){
@@ -692,9 +670,9 @@ function render() {
       url: '/upload',
       method: 'POST',
       //contentType means the data you sent
-      //contentType: 'application/json; charset=utf-8',
+      contentType: 'application/json; charset=utf-8',
       data: {
-        eye: JSON.stringify(records)
+        eye: records
       },
       //dataType: 'json',
       error: function (err) {
@@ -727,6 +705,7 @@ function render() {
 }
 
 init();
+console.log(sparksEmitter1);
 animate();
 
 },{"./track.js":"/Users/karen/Documents/my_project/gaze/public/js/track.js"}],"/Users/karen/Documents/my_project/gaze/public/js/track.js":[function(require,module,exports){
