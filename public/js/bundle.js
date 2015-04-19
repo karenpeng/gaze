@@ -70,15 +70,7 @@ var h = document.getElementById('videoel').height;
 var frameCount = 0;
 var keepLooping = true;
 
-var nothing, goToHell, onParticleCreated;
-
-var records = [];
-var othersRecords = [];
-var recordCountDown = 0;
-var progress = document.getElementById('progress');
-var beginRecord = 180;
-var endRecord = 600;
-var startOther = false;
+var nothing, goToHell, onParticleCreatedL, onParticleCreatedR;
 
 function viewport(pos){
   var x =  ((w - pos[0]) / w * 2 - 1) *  windowHalfX * 1.2;
@@ -280,7 +272,7 @@ function init() {
 
   };
 
-  onParticleCreated = function( p, eye ) {
+  onParticleCreatedL = function( p ) {
 
     var position = p.position;
     p.target.position = position;
@@ -302,17 +294,50 @@ function init() {
       timeOnShapePath += 0.00035 * delta;
       if ( timeOnShapePath > 1 ) timeOnShapePath -= 1;
 
-    switch(eye){
-      case'R':
-        emitterpos.x = eyeR[0];
-        emitterpos.y = eyeR[1];
-        break;
-      case'L':
-        emitterpos.x = eyeL[0];
-        emitterpos.y = eyeL[1];
-        break;
-    }
+      emitterpos.x = eyeL[0];
+      emitterpos.y = eyeL[1];
 
+      // pointLight.position.copy( emitterpos );
+      pointLight.position.x = emitterpos.x;
+      pointLight.position.y = emitterpos.y;
+      pointLight.position.z = 100;
+
+      particles.vertices[ target ] = p.position;
+
+      values_color[ target ].setHSL( hue, 0.6, 0.1 );
+
+      pointLight.color.setHSL( hue, 0.5, 0.8 );
+
+
+    };
+
+  };
+
+
+  onParticleCreatedR = function( p ) {
+
+    var position = p.position;
+    p.target.position = position;
+
+    var target = p.target;
+
+    if ( target ) {
+
+      // console.log(target,particles.vertices[target]);
+      // values_size[target]
+      // values_color[target]
+
+      hue += 0.0003 * delta;
+      if ( hue < 0.6 ) hue += 0.6;
+      if ( hue > 0.7 ) hue -= 0.7;
+
+      // TODO Create a PointOnShape Action/Zone in the particle engine
+
+      timeOnShapePath += 0.00035 * delta;
+      if ( timeOnShapePath > 1 ) timeOnShapePath -= 1;
+
+      emitterpos.x = eyeR[0];
+      emitterpos.y = eyeR[1];
 
       // pointLight.position.copy( emitterpos );
       pointLight.position.x = emitterpos.x;
@@ -353,75 +378,48 @@ function init() {
 
   };
 
-function configEmitter(emitter, eye){
+
+  sparksEmitter1 = new SPARKS.Emitter( new SPARKS.SteadyCounter( 40 ) );
 
   emitterpos = new THREE.Vector3( 0, 0, 0 );
 
-  switch(eye){
-    case'R':
-      sparksEmitter1 = new SPARKS.Emitter( new SPARKS.SteadyCounter( 40 ) );
-
-      sparksEmitter1.addInitializer( new SPARKS.Position( new SPARKS.PointZone( emitterpos ) ) );
-      sparksEmitter1.addInitializer( new SPARKS.Lifetime( 0, 3 ));
-      sparksEmitter1.addInitializer( new SPARKS.Target( null, setTargetParticle ) );
+  sparksEmitter1.addInitializer( new SPARKS.Position( new SPARKS.PointZone( emitterpos ) ) );
+  sparksEmitter1.addInitializer( new SPARKS.Lifetime( 0, 3 ));
+  sparksEmitter1.addInitializer( new SPARKS.Target( null, setTargetParticle ) );
 
 
-      sparksEmitter1.addInitializer( new SPARKS.Velocity( new SPARKS.PointZone( new THREE.Vector3( 0, -5, 1 ) ) ) );
+  sparksEmitter1.addInitializer( new SPARKS.Velocity( new SPARKS.PointZone( new THREE.Vector3( 0, -5, 1 ) ) ) );
 
-      sparksEmitter1.addAction( new SPARKS.Age(TWEEN.Easing.Quartic.In) );
-      //sparksEmitter.addAction( new SPARKS.Age() );
+  sparksEmitter1.addAction( new SPARKS.Age(TWEEN.Easing.Quartic.In) );
+  //sparksEmitter.addAction( new SPARKS.Age() );
+  sparksEmitter1.addAction( new SPARKS.Accelerate( Math.random() * -(10), 0, -20 ) );
+  sparksEmitter1.addAction( new SPARKS.Move() );
+  sparksEmitter1.addAction( new SPARKS.RandomDrift( 200, 10, 300 ) );
 
-      sparksEmitter1.addAction( new SPARKS.Move() );
-      sparksEmitter1.addAction( new SPARKS.RandomDrift( 200, 10, 300 ) );
+  sparksEmitter1.addCallback( "created", onParticleCreatedR );
+  sparksEmitter1.addCallback( "dead", onParticleDead );
 
-      sparksEmitter1.addAction( new SPARKS.Accelerate( Math.random() * -(10), 0, -20 ) );
-      sparksEmitter1.addCallback( "created", function(p){
-        onParticleCreated(p, 'R')
-      });
-      sparksEmitter1.addCallback( "dead", onParticleDead );
-      sparksEmitter1.start();
-      break;
+  sparksEmitter1.start();
 
-    case'L':
-      sparksEmitter2 = new SPARKS.Emitter( new SPARKS.SteadyCounter( 40 ) );
-
-      sparksEmitter2.addInitializer( new SPARKS.Position( new SPARKS.PointZone( emitterpos ) ) );
-      sparksEmitter2.addInitializer( new SPARKS.Lifetime( 0, 3 ));
-      sparksEmitter2.addInitializer( new SPARKS.Target( null, setTargetParticle ) );
+  sparksEmitter2 = new SPARKS.Emitter( new SPARKS.SteadyCounter( 40 ) );
+  sparksEmitter2.addInitializer( new SPARKS.Position( new SPARKS.PointZone( emitterpos ) ) );
+  sparksEmitter2.addInitializer( new SPARKS.Lifetime( 0, 3 ));
+  sparksEmitter2.addInitializer( new SPARKS.Target( null, setTargetParticle ) );
 
 
-      sparksEmitter2.addInitializer( new SPARKS.Velocity( new SPARKS.PointZone( new THREE.Vector3( 0, -5, 1 ) ) ) );
+  sparksEmitter2.addInitializer( new SPARKS.Velocity( new SPARKS.PointZone( new THREE.Vector3( 0, -5, 1 ) ) ) );
 
-      sparksEmitter2.addAction( new SPARKS.Age(TWEEN.Easing.Quartic.In) );
-      //sparksEmitter.addAction( new SPARKS.Age() );
+  sparksEmitter2.addAction( new SPARKS.Age(TWEEN.Easing.Quartic.In) );
+  //sparksEmitter.addAction( new SPARKS.Age() );
+  sparksEmitter2.addAction( new SPARKS.Accelerate( Math.random() * 10, 0, -20 ) );
+  sparksEmitter2.addAction( new SPARKS.Move() );
+  sparksEmitter2.addAction( new SPARKS.RandomDrift( 200, 10, 300 ) );
 
-      sparksEmitter2.addAction( new SPARKS.Move() );
-      sparksEmitter2.addAction( new SPARKS.RandomDrift( 200, 10, 300 ) );
-      sparksEmitter2.addAction( new SPARKS.Accelerate( Math.random() * 10, 0, -20 ) );
-      sparksEmitter2.addCallback( "created", function(p){
-        onParticleCreated(p, 'L')
-      });
-      sparksEmitter2.addCallback( "dead", onParticleDead );
-      sparksEmitter2.start();
-      break;
-    }
+  sparksEmitter2.addCallback( "created", onParticleCreatedL );
+  sparksEmitter2.addCallback( "dead", onParticleDead );
 
-  }
+  sparksEmitter2.start();
 
-  configEmitter('whatever', 'L');
-  configEmitter('whatever', 'R');
-
-  blinkR.on('Rblink', function(){
-    //console.log('right blink!');
-    sparksEmitter1.addCallback( "created", nothing );
-    sparksEmitter1.addCallback( "updated", goToHell );
-    setTimeout(function(){
-      sparksEmitter1.addCallback( "updated", nothing);
-      sparksEmitter1.addCallback( "created", function(p){
-        onParticleCreated(p, 'R');
-      });
-    }, Math.random() * 120 + 60);
-  });
 
   blinkL.on('Lblink', function(){
     //console.log('left blink!');
@@ -429,10 +427,18 @@ function configEmitter(emitter, eye){
     sparksEmitter2.addCallback( "updated", goToHell );
     setTimeout(function(){
       sparksEmitter2.addCallback( "updated", nothing);
-      sparksEmitter2.addCallback( "created", function(p){
-        onParticleCreated(p, 'L');
-      });
-    }, Math.random() * 120 + 60);
+      sparksEmitter2.addCallback( "created", onParticleCreatedL );
+    }, Math.random() * 120 + 80);
+  });
+
+  blinkR.on('Rblink', function(){
+    //console.log('right blink!');
+    sparksEmitter1.addCallback( "created", nothing );
+    sparksEmitter1.addCallback( "updated", goToHell );
+    setTimeout(function(){
+      sparksEmitter1.addCallback( "updated", nothing);
+      sparksEmitter1.addCallback( "created", onParticleCreatedR );
+    }, Math.random() * 120 + 80);
   });
 
 
@@ -596,7 +602,14 @@ function animate() {
 
 }
 
-
+var records = [];
+var othersRecords = [];
+var recordCountDown = 0;
+var progress = document.getElementById('progress');
+var beginRecord = 180;
+var endRecord = 600;
+var startOther = false;
+var sent = false;
 
 function render() {
 
@@ -624,14 +637,9 @@ function render() {
     sparksEmitter2.addCallback( "updated", goToHell );
   }else{
     sparksEmitter1.addCallback( "updated", nothing);
-    sparksEmitter1.addCallback( "created", function(p){
-      onParticleCreated(p, 'L')
-    });
+    sparksEmitter1.addCallback( "created", onParticleCreatedL );
     sparksEmitter2.addCallback( "updated", nothing);
-    sparksEmitter2.addCallback( "created", function(p){
-      console.log('fork!!! '+p)
-      onParticleCreated(p, 'R')
-    });
+    sparksEmitter2.addCallback( "created", onParticleCreatedR );
   }
 
   if(rawL !== undefined && rawR !== undefined){
@@ -639,22 +647,22 @@ function render() {
   }
 
 
-  // if(!startOther){
-  //   if(rawL !== undefined){
-  //     eyeL = viewport(rawL);
-  //   }
-  //   if(rawR !== undefined ){
-  //     eyeR = viewport(rawR);
-  //   }
-  // }else{
-  //   if(othersRecords.length){
-  //     var eye = othersRecords.shift();
-  //     eyeL = viewport(eye[0]);
-  //     eyeR = viewport(eye[1]);
-  //   }else{
-  //     keepLooping = false;
-  //   }
-  // }
+  if(!startOther){
+    if(rawL !== undefined){
+      eyeL = viewport(rawL);
+    }
+    if(rawR !== undefined ){
+      eyeR = viewport(rawR);
+    }
+  }else{
+    if(othersRecords.length){
+      var eye = othersRecords.shift();
+      eyeL = viewport(eye[0]);
+      eyeR = viewport(eye[1]);
+    }else{
+      keepLooping = false;
+    }
+  }
 
   if(recordCountDown > beginRecord && recordCountDown <= endRecord ){
     records.push([rawL, rawR]);
@@ -679,16 +687,17 @@ function render() {
     });
   }
 
-  if(recordCountDown === endRecord){
+  if(recordCountDown === endRecord && !sent){
     console.log(records.length);
     $.ajax({
       url: '/upload',
       method: 'POST',
       //contentType means the data you sent
       contentType: 'application/json; charset=utf-8',
-      data: {
-        eye: records
-      },
+      //stringify is important
+      //see:
+      //http://encosia.com/asmx-scriptservice-mistake-invalid-json-primitive/
+      data: JSON.stringify({eye: records}),
       //dataType: 'json',
       error: function (err) {
         console.error(err);
@@ -697,6 +706,7 @@ function render() {
         console.log('(•ω•)');
       }
     });
+    sent = true;
   }
 
 
@@ -721,7 +731,6 @@ function render() {
 
 init();
 animate();
-
 },{"./track.js":"/Users/karen/Documents/my_project/gaze/public/js/track.js"}],"/Users/karen/Documents/my_project/gaze/public/js/track.js":[function(require,module,exports){
 var inherits = require('inherits');
 var EventEmitter = require('events').EventEmitter;
