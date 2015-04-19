@@ -666,9 +666,9 @@ function render() {
       url: '/upload',
       method: 'POST',
       //contentType means the data you sent
-      //contentType: 'application/json; charset=utf-8',
+      contentType: 'application/json; charset=utf-8',
       data: {
-        eye: JSON.stringify(records)
+        eye: records
       },
       //dataType: 'json',
       error: function (err) {
