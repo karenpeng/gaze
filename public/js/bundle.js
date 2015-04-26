@@ -72,6 +72,14 @@ var keepLooping = true;
 
 var nothing, goToHell, onParticleCreatedL, onParticleCreatedR;
 
+var records = [];
+var othersRecords = [];
+var recordCountDown = 0;
+var progress = document.getElementById('progress');
+var beginRecord = 180;
+var endRecord = 600;
+var startOther = false;
+
 function viewport(pos){
   var x =  ((w - pos[0]) / w * 2 - 1) *  windowHalfX * 1.2;
   var y =  (-pos[1] / h * 2 + 1) *  windowHalfX * 1.4;
@@ -379,7 +387,7 @@ function init() {
   };
 
 
-  sparksEmitter1 = new SPARKS.Emitter( new SPARKS.SteadyCounter( 40 ) );
+  sparksEmitter1 = new SPARKS.Emitter( new SPARKS.SteadyCounter( 30 ) );
 
   emitterpos = new THREE.Vector3( 0, 0, 0 );
 
@@ -401,7 +409,7 @@ function init() {
 
   sparksEmitter1.start();
 
-  sparksEmitter2 = new SPARKS.Emitter( new SPARKS.SteadyCounter( 40 ) );
+  sparksEmitter2 = new SPARKS.Emitter( new SPARKS.SteadyCounter( 30 ) );
   sparksEmitter2.addInitializer( new SPARKS.Position( new SPARKS.PointZone( emitterpos ) ) );
   sparksEmitter2.addInitializer( new SPARKS.Lifetime( 0, 3 ));
   sparksEmitter2.addInitializer( new SPARKS.Target( null, setTargetParticle ) );
@@ -602,15 +610,6 @@ function animate() {
 
 }
 
-var records = [];
-var othersRecords = [];
-var recordCountDown = 0;
-var progress = document.getElementById('progress');
-var beginRecord = 180;
-var endRecord = 600;
-var startOther = false;
-var sent = false;
-
 function render() {
 
   delta = speed * clock.getDelta();
@@ -655,6 +654,8 @@ function render() {
       eyeR = viewport(rawR);
     }
   }else{
+    //the user will think the detection is incorrect!!!
+    //TODE: to make some hints or warning.
     if(othersRecords.length){
       var eye = othersRecords.shift();
       eyeL = viewport(eye[0]);
@@ -670,44 +671,43 @@ function render() {
     document.getElementById('progress').setAttribute('style', 'width:'+  w + 'px;');
   }
 
-  if(recordCountDown === beginRecord){
-    $.ajax({
-      url: '/previous',
-      method: 'GET',
-      //dataType means the data you get
-      dataType: 'json',
-      error: function (err) {
-        console.error(err);
-      },
-      success: function (data) {
-        othersRecords = data.eye;
-        console.log(othersRecords);
-        //startOther = true;
-      }
-    });
-  }
+  // if(recordCountDown === beginRecord){
+  //   $.ajax({
+  //     url: '/previous',
+  //     method: 'GET',
+  //     //dataType means the data you get
+  //     dataType: 'json',
+  //     error: function (err) {
+  //       console.error(err);
+  //     },
+  //     success: function (data) {
+  //       othersRecords = data.eye;
+  //       console.log(othersRecords);
+  //       startOther = true;
+  //     }
+  //   });
+  // }
 
-  if(recordCountDown === endRecord && !sent){
-    console.log(records.length);
-    $.ajax({
-      url: '/upload',
-      method: 'POST',
-      //contentType means the data you sent
-      contentType: 'application/json; charset=utf-8',
-      //stringify is important
-      //see:
-      //http://encosia.com/asmx-scriptservice-mistake-invalid-json-primitive/
-      data: JSON.stringify({eye: records}),
-      //dataType: 'json',
-      error: function (err) {
-        console.error(err);
-      },
-      success: function () {
-        console.log('(•ω•)');
-      }
-    });
-    sent = true;
-  }
+  // if(recordCountDown === endRecord){
+  //   console.log(records.length);
+  //   $.ajax({
+  //     url: '/upload',
+  //     method: 'POST',
+  //     //contentType means the data you sent
+  //     contentType: 'application/json; charset=utf-8',
+  //     //stringify is important
+  //     //see:
+  //     //http://encosia.com/asmx-scriptservice-mistake-invalid-json-primitive/
+  //     data: JSON.stringify({eye: records}),
+  //     //dataType: 'json',
+  //     error: function (err) {
+  //       console.error(err);
+  //     },
+  //     success: function () {
+  //       console.log('(•ω•)');
+  //     }
+  //   });
+  // }
 
 
   // var dR = require('./track.js').dR;
