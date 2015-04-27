@@ -53,6 +53,19 @@ app.get('/previous', function (req, res){
 });
 
 app.get('/gallery', function (req, res){
+  var query = {};
+  var selet = 'eye';
+  var option = {
+    sort: {
+      "date": -1
+    }
+  };
+  Record.find(query, selet, option, function (err, data) {
+    if (err) {
+      return console.error(err);
+    }
+    res.send(data);
+  });
   res.render('gallery.jade');
 });
 
