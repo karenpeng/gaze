@@ -7,4 +7,3 @@ var recordSchema = mongoose.Schema({
 });
 
 module.exports = mongoose.model('Record', recordSchema);
-

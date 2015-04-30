@@ -23,7 +23,8 @@ var mouseXOnMouseDown = 0;
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
 
-var delta = 1, clock = new THREE.Clock();
+var delta = 1,
+  clock = new THREE.Clock();
 
 var heartShape, particleCloud, sparksEmitter, emitterPos;
 var _rotation = 0;
@@ -50,13 +51,21 @@ var records = [];
 var othersRecords = [];
 var recordCountDown = 0;
 var progress = document.getElementById('progress');
-var beginRecord = 180;
-var endRecord = 600;
+var gap = 400;
+var beginRecord = 500;
+var endRecord = 1000;
 var startOther = false;
+var gameStart = false;
+var RADIUS = 36;
+var MAX_NUM = 10;
+var SATURATION = 0.3;
+var ACCELERATION_X = 6;
+var RANDOMESS_X = 80;
+var LIFE = 2.4;
 
-function viewport(pos){
-  var x =  ((w - pos[0]) / w * 2 - 1) *  windowHalfX * 1.2;
-  var y =  (-pos[1] / h * 2 + 1) *  windowHalfX * 1.4;
+function viewport(pos) {
+  var x = ((w - pos[0]) / w * 2 - 1) * windowHalfX;
+  var y = (-pos[1] / h * 2 + 1) * windowHalfX * 1.5;
   return [x, y];
 }
 
@@ -73,8 +82,8 @@ function init() {
   container = document.getElementById('container');
   // CAMERA
 
-  camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 2000 );
-  camera.position.set( 0, 150, 400 );
+  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 2000);
+  camera.position.set(0, 150, 400);
 
   // SCENE
 
@@ -86,17 +95,17 @@ function init() {
 
   // LIGHTS
 
-  var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
-  directionalLight.position.set( 0, -1, 1 );
+  var directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+  directionalLight.position.set(0, -1, 1);
   directionalLight.position.normalize();
-  scene.add( directionalLight );
+  scene.add(directionalLight);
 
-  pointLight = new THREE.PointLight( 0xffffff, 2, 300 );
-  pointLight.position.set( 0, 0, 0 );
-  scene.add( pointLight );
+  pointLight = new THREE.PointLight(0xffffff, 2, 300);
+  pointLight.position.set(0, 0, 0);
+  scene.add(pointLight);
 
   group = new THREE.Group();
-  scene.add( group );
+  scene.add(group);
 
   // Create particle objects for Three.js
 
@@ -104,12 +113,11 @@ function init() {
 
   var particles = new THREE.Geometry();
 
-  function newpos( x, y, z ) {
+  function newpos(x, y, z) {
 
-    return new THREE.Vector3( x, y, z );
+    return new THREE.Vector3(x, y, z);
 
   }
-
 
   var Pool = {
 
@@ -117,56 +125,63 @@ function init() {
 
     // Get a new Vector
 
-    get: function() {
+    get: function () {
 
-      if ( this.__pools.length > 0 ) {
+      if (this.__pools.length > 0) {
 
         return this.__pools.pop();
 
       }
 
-      console.log( "pool ran out!" )
+      console.log("pool ran out!")
       return null;
 
     },
 
     // Release a vector back into the pool
 
-    add: function( v ) {
+    add: function (v) {
 
-      this.__pools.push( v );
+      this.__pools.push(v);
 
     }
 
   };
 
+  for (i = 0; i < particlesLength; i++) {
 
-  for ( i = 0; i < particlesLength; i ++ ) {
-
-    particles.vertices.push( newpos( Math.random() * 200 - 100, Math.random() * 100 + 150, Math.random() * 50 ) );
-    Pool.add( i );
+    particles.vertices.push(newpos(Math.random() * 200 - 100, Math.random() * 100 + 150, Math.random() * 50));
+    Pool.add(i);
 
   }
-
 
   // Create pools of vectors
 
   attributes = {
 
-    size:  { type: 'f', value: [] },
-    pcolor: { type: 'c', value: [] }
+    size: {
+      type: 'f',
+      value: []
+    },
+    pcolor: {
+      type: 'c',
+      value: []
+    }
 
   };
 
-  var sprite = generateSprite() ;
+  var sprite = generateSprite();
   //document.body.appendChild(sprite);
 
-  texture = new THREE.Texture( sprite );
+  texture = new THREE.Texture(sprite);
   texture.needsUpdate = true;
 
   uniforms = {
 
-    texture:   { type: "t", value: texture }
+    texture: {
+      type: "t",
+      value: texture
+    }
 
   };
 
@@ -180,25 +195,25 @@ function init() {
 
   function generateSprite() {
 
-    var canvas = document.createElement( 'canvas' );
+    var canvas = document.createElement('canvas');
     canvas.width = 128;
     canvas.height = 128;
 
-    var context = canvas.getContext( '2d' );
+    var context = canvas.getContext('2d');
 
     context.beginPath();
-    context.arc( 64, 64, 60, 0, Math.PI * 2, false) ;
+    context.arc(64, 64, RADIUS, 0, Math.PI * 2, false);
 
     context.lineWidth = 0.5; //0.05
     context.stroke();
     context.restore();
 
-    var gradient = context.createRadialGradient( canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2 );
+    var gradient = context.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2);
 
-    gradient.addColorStop( 0, 'rgba(255,255,255,1)' );
-    gradient.addColorStop( 0.2, 'rgba(255,255,255,1)' );
-    gradient.addColorStop( 0.4, 'rgba(200,200,200,1)' );
-    gradient.addColorStop( 1, 'rgba(0,0,0,1)' );
+    gradient.addColorStop(0, 'rgba(255,255,255,1)');
+    gradient.addColorStop(0.2, 'rgba(255,255,255,1)');
+    gradient.addColorStop(0.4, 'rgba(200,200,200,1)');
+    gradient.addColorStop(1, 'rgba(0,0,0,1)');
 
     context.fillStyle = gradient;
 
@@ -208,14 +223,13 @@ function init() {
 
   }
 
-
-  var shaderMaterial = new THREE.ShaderMaterial( {
+  var shaderMaterial = new THREE.ShaderMaterial({
 
     uniforms: uniforms,
     attributes: attributes,
 
-    vertexShader: document.getElementById( 'vertexshader' ).textContent,
-    fragmentShader: document.getElementById( 'fragmentshader' ).textContent,
+    vertexShader: document.getElementById('vertexshader').textContent,
+    fragmentShader: document.getElementById('fragmentshader').textContent,
 
     blending: THREE.AdditiveBlending,
     depthWrite: false,
@@ -223,58 +237,67 @@ function init() {
 
   });
 
-  particleCloud = new THREE.PointCloud( particles, shaderMaterial );
+  particleCloud = new THREE.PointCloud(particles, shaderMaterial);
 
   var vertices = particleCloud.geometry.vertices;
   var values_size = attributes.size.value;
   var values_color = attributes.pcolor.value;
 
-  for( var v = 0; v < vertices.length; v ++ ) {
+  for (var v = 0; v < vertices.length; v++) {
 
-    values_size[ v ] = 50;
+    values_size[v] = 50;
 
-    values_color[ v ] = new THREE.Color( 0x000000 );
+    values_color[v] = new THREE.Color(0x000000);
 
-    particles.vertices[ v ].set( Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY );
+    particles.vertices[v].set(Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY);
 
   }
 
-  group.add( particleCloud );
+  group.add(particleCloud);
   particleCloud.y = 800;
-
 
   var hue = 0;
 
-  var setTargetParticle = function() {
+  var setTargetParticle = function () {
 
     var target = Pool.get();
-    values_size[ target ] = Math.random() * 200 + 100;
+    values_size[target] = Math.random() * 200 + 100;
 
     return target;
 
   };
 
-  onParticleCreatedL = function( p ) {
+  onParticleCreatedL = function (p, c) {
 
     var position = p.position;
     p.target.position = position;
 
     var target = p.target;
 
-    if ( target ) {
+    if (target) {
 
       // console.log(target,particles.vertices[target]);
       // values_size[target]
       // values_color[target]
+      switch (c) {
 
-      hue += 0.0003 * delta;
-      if ( hue < 0.6 ) hue += 0.6;
-      if ( hue > 0.7 ) hue -= 0.7;
+      case 'me':
+        hue += 0.0001 * delta;
+        if (hue < 0.4) hue += 0.4;
+        if (hue > 0.7) hue -= 0.7;
+        break;
 
+      case 'other':
+        hue += 0.0003 * delta;
+        if (hue < 0.6) hue += 0.6;
+        if (hue > 0.7) hue -= 0.7;
+        break;
+
+      }
       // TODO Create a PointOnShape Action/Zone in the particle engine
 
       timeOnShapePath += 0.00035 * delta;
-      if ( timeOnShapePath > 1 ) timeOnShapePath -= 1;
+      if (timeOnShapePath > 1) timeOnShapePath -= 1;
 
       emitterpos.x = eyeL[0];
       emitterpos.y = eyeL[1];
@@ -284,39 +307,49 @@ function init() {
       pointLight.position.y = emitterpos.y;
       pointLight.position.z = 100;
 
-      particles.vertices[ target ] = p.position;
+      particles.vertices[target] = p.position;
 
-      values_color[ target ].setHSL( hue, 0.6, 0.1 );
+      values_color[target].setHSL(hue, SATURATION, 0.1);
 
-      pointLight.color.setHSL( hue, 0.5, 0.8 );
-
+      pointLight.color.setHSL(hue, SATURATION, 0.9);
 
     };
 
   };
 
-
-  onParticleCreatedR = function( p ) {
+  onParticleCreatedR = function (p, c) {
 
     var position = p.position;
     p.target.position = position;
 
     var target = p.target;
 
-    if ( target ) {
+    if (target) {
 
       // console.log(target,particles.vertices[target]);
       // values_size[target]
       // values_color[target]
 
-      hue += 0.0003 * delta;
-      if ( hue < 0.6 ) hue += 0.6;
-      if ( hue > 0.7 ) hue -= 0.7;
+      switch (c) {
+
+      case 'me':
+        hue += 0.0001 * delta;
+        if (hue < 0.4) hue += 0.4;
+        if (hue > 0.7) hue -= 0.7;
+        break;
+
+      case 'other':
+        hue += 0.0003 * delta;
+        if (hue < 0.6) hue += 0.6;
+        if (hue > 0.7) hue -= 0.7;
+        break;
+
+      }
 
       // TODO Create a PointOnShape Action/Zone in the particle engine
 
       timeOnShapePath += 0.00035 * delta;
-      if ( timeOnShapePath > 1 ) timeOnShapePath -= 1;
+      if (timeOnShapePath > 1) timeOnShapePath -= 1;
 
       emitterpos.x = eyeR[0];
       emitterpos.y = eyeR[1];
@@ -326,163 +359,165 @@ function init() {
       pointLight.position.y = emitterpos.y;
       pointLight.position.z = 100;
 
-      particles.vertices[ target ] = p.position;
+      particles.vertices[target] = p.position;
 
-      values_color[ target ].setHSL( hue, 0.6, 0.1 );
+      values_color[target].setHSL(hue, SATURATION, 0.1);
 
-      pointLight.color.setHSL( hue, 0.5, 0.8 );
-
+      pointLight.color.setHSL(hue, SATURATION, 0.9);
 
     };
 
   };
 
-  var onParticleDead = function( particle ) {
+  var onParticleDead = function (particle) {
 
     var target = particle.target;
 
-    if ( target ) {
+    if (target) {
 
       // Hide the particle
 
-      values_color[ target ].setRGB( 0, 0, 0 );
-      particles.vertices[ target ].set( Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY );
+      values_color[target].setRGB(0, 0, 0);
+      particles.vertices[target].set(Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY);
 
       // Mark particle system as available by returning to pool
 
-      Pool.add( particle.target );
+      Pool.add(particle.target);
 
     }
 
   };
 
-  var engineLoopUpdate = function() {
+  var engineLoopUpdate = function () {
 
   };
 
+  sparksEmitter1 = new SPARKS.Emitter(new SPARKS.SteadyCounter(MAX_NUM));
 
-  sparksEmitter1 = new SPARKS.Emitter( new SPARKS.SteadyCounter( 30 ) );
+  emitterpos = new THREE.Vector3(0, 0, 0);
 
-  emitterpos = new THREE.Vector3( 0, 0, 0 );
+  sparksEmitter1.addInitializer(new SPARKS.Position(new SPARKS.PointZone(emitterpos)));
+  sparksEmitter1.addInitializer(new SPARKS.Lifetime(0, LIFE));
+  sparksEmitter1.addInitializer(new SPARKS.Target(null, setTargetParticle));
 
-  sparksEmitter1.addInitializer( new SPARKS.Position( new SPARKS.PointZone( emitterpos ) ) );
-  sparksEmitter1.addInitializer( new SPARKS.Lifetime( 0, 3 ));
-  sparksEmitter1.addInitializer( new SPARKS.Target( null, setTargetParticle ) );
+  sparksEmitter1.addInitializer(new SPARKS.Velocity(new SPARKS.PointZone(new THREE.Vector3(0, -5, 1))));
 
-
-  sparksEmitter1.addInitializer( new SPARKS.Velocity( new SPARKS.PointZone( new THREE.Vector3( 0, -5, 1 ) ) ) );
-
-  sparksEmitter1.addAction( new SPARKS.Age(TWEEN.Easing.Quartic.In) );
+  sparksEmitter1.addAction(new SPARKS.Age(TWEEN.Easing.Quartic.In));
   //sparksEmitter.addAction( new SPARKS.Age() );
-  sparksEmitter1.addAction( new SPARKS.Accelerate( Math.random() * -(10), 0, -20 ) );
-  sparksEmitter1.addAction( new SPARKS.Move() );
-  sparksEmitter1.addAction( new SPARKS.RandomDrift( 200, 10, 300 ) );
+  sparksEmitter1.addAction(new SPARKS.Accelerate(Math.random() * -(ACCELERATION_X), 0, -20));
+  sparksEmitter1.addAction(new SPARKS.Move());
+  sparksEmitter1.addAction(new SPARKS.RandomDrift(RANDOMESS_X, 10, 300));
 
-  sparksEmitter1.addCallback( "created", onParticleCreatedR );
-  sparksEmitter1.addCallback( "dead", onParticleDead );
+  sparksEmitter1.addCallback("created", function (p) {
+    onParticleCreatedR(p, 'me');
+  });
+  sparksEmitter1.addCallback("dead", onParticleDead);
 
-  sparksEmitter1.start();
+  // sparksEmitter1.start();
 
-  sparksEmitter2 = new SPARKS.Emitter( new SPARKS.SteadyCounter( 30 ) );
-  sparksEmitter2.addInitializer( new SPARKS.Position( new SPARKS.PointZone( emitterpos ) ) );
-  sparksEmitter2.addInitializer( new SPARKS.Lifetime( 0, 3 ));
-  sparksEmitter2.addInitializer( new SPARKS.Target( null, setTargetParticle ) );
+  sparksEmitter2 = new SPARKS.Emitter(new SPARKS.SteadyCounter(MAX_NUM));
+  sparksEmitter2.addInitializer(new SPARKS.Position(new SPARKS.PointZone(emitterpos)));
+  sparksEmitter2.addInitializer(new SPARKS.Lifetime(0, LIFE));
+  sparksEmitter2.addInitializer(new SPARKS.Target(null, setTargetParticle));
 
+  sparksEmitter2.addInitializer(new SPARKS.Velocity(new SPARKS.PointZone(new THREE.Vector3(0, -5, 1))));
 
-  sparksEmitter2.addInitializer( new SPARKS.Velocity( new SPARKS.PointZone( new THREE.Vector3( 0, -5, 1 ) ) ) );
-
-  sparksEmitter2.addAction( new SPARKS.Age(TWEEN.Easing.Quartic.In) );
+  sparksEmitter2.addAction(new SPARKS.Age(TWEEN.Easing.Quartic.In));
   //sparksEmitter.addAction( new SPARKS.Age() );
-  sparksEmitter2.addAction( new SPARKS.Accelerate( Math.random() * 10, 0, -20 ) );
-  sparksEmitter2.addAction( new SPARKS.Move() );
-  sparksEmitter2.addAction( new SPARKS.RandomDrift( 200, 10, 300 ) );
+  sparksEmitter2.addAction(new SPARKS.Accelerate(Math.random() * ACCELERATION_X, 0, -20));
+  sparksEmitter2.addAction(new SPARKS.Move());
+  sparksEmitter2.addAction(new SPARKS.RandomDrift(RANDOMESS_X, 10, 300));
 
-  sparksEmitter2.addCallback( "created", onParticleCreatedL );
-  sparksEmitter2.addCallback( "dead", onParticleDead );
+  sparksEmitter2.addCallback("created", function (p) {
+    onParticleCreatedL(p, 'me');
+  });
+  sparksEmitter2.addCallback("dead", onParticleDead);
 
-  sparksEmitter2.start();
+  // sparksEmitter2.start();
 
-
-  blinkL.on('Lblink', function(){
+  blinkL.on('Lblink', function () {
     //console.log('left blink!');
-    sparksEmitter2.addCallback( "created", nothing );
-    sparksEmitter2.addCallback( "updated", goToHell );
-    setTimeout(function(){
-      sparksEmitter2.addCallback( "updated", nothing);
-      sparksEmitter2.addCallback( "created", onParticleCreatedL );
+    sparksEmitter2.addCallback("created", nothing);
+    sparksEmitter2.addCallback("updated", goToHell);
+    setTimeout(function () {
+      sparksEmitter2.addCallback("updated", nothing);
+      sparksEmitter2.addCallback("created", function (p) {
+        onParticleCreatedL(p, 'me');
+      });
     }, Math.random() * 120 + 80);
   });
 
-  blinkR.on('Rblink', function(){
+  blinkR.on('Rblink', function () {
     //console.log('right blink!');
-    sparksEmitter1.addCallback( "created", nothing );
-    sparksEmitter1.addCallback( "updated", goToHell );
-    setTimeout(function(){
-      sparksEmitter1.addCallback( "updated", nothing);
-      sparksEmitter1.addCallback( "created", onParticleCreatedR );
+    sparksEmitter1.addCallback("created", nothing);
+    sparksEmitter1.addCallback("updated", goToHell);
+    setTimeout(function () {
+      sparksEmitter1.addCallback("updated", nothing);
+      sparksEmitter1.addCallback("created", function (p) {
+        onParticleCreatedR(p, 'me');
+      });
     }, Math.random() * 120 + 80);
   });
 
-
-  nothing = function(){
+  nothing = function () {
     //do nothing
   }
 
-  goToHell = function(particle){
+  goToHell = function (particle) {
     particle.age += 1;
   };
 
   // End Particles
 
   renderer = new THREE.WebGLRenderer();
-  renderer.setPixelRatio( window.devicePixelRatio );
-  renderer.setSize( window.innerWidth, window.innerHeight );
-  container.appendChild( renderer.domElement );
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  container.appendChild(renderer.domElement);
 
   stats = new Stats();
   stats.domElement.style.position = 'absolute';
   stats.domElement.style.top = '0px';
   stats.domElement.style.left = '0px';
-  container.appendChild( stats.domElement );
+  container.appendChild(stats.domElement);
 
   // POST PROCESSING
 
-  var effectFocus = new THREE.ShaderPass( THREE.FocusShader );
+  var effectFocus = new THREE.ShaderPass(THREE.FocusShader);
 
-  var effectCopy = new THREE.ShaderPass( THREE.CopyShader );
-  effectFilm = new THREE.FilmPass( 0.5, 0.25, 2048, false );
+  var effectCopy = new THREE.ShaderPass(THREE.CopyShader);
+  effectFilm = new THREE.FilmPass(0.5, 0.25, 2048, false);
 
   var shaderBlur = THREE.TriangleBlurShader;
-  effectBlurX = new THREE.ShaderPass( shaderBlur, 'texture' );
-  effectBlurY = new THREE.ShaderPass( shaderBlur, 'texture' );
+  effectBlurX = new THREE.ShaderPass(shaderBlur, 'texture');
+  effectBlurY = new THREE.ShaderPass(shaderBlur, 'texture');
 
   var radius = 15;
   var blurAmountX = radius / window.innerWidth;
   var blurAmountY = radius / window.innerHeight;
 
-  hblur = new THREE.ShaderPass( THREE.HorizontalBlurShader );
-  vblur = new THREE.ShaderPass( THREE.VerticalBlurShader);
+  hblur = new THREE.ShaderPass(THREE.HorizontalBlurShader);
+  vblur = new THREE.ShaderPass(THREE.VerticalBlurShader);
 
-  hblur.uniforms[ 'h' ].value =  1 / window.innerWidth;
-  vblur.uniforms[ 'v' ].value =  1 / window.innerHeight;
+  hblur.uniforms['h'].value = 1 / window.innerWidth;
+  vblur.uniforms['v'].value = 1 / window.innerHeight;
 
-  effectBlurX.uniforms[ 'delta' ].value = new THREE.Vector2( blurAmountX, 0 );
-  effectBlurY.uniforms[ 'delta' ].value = new THREE.Vector2( 0, blurAmountY );
+  effectBlurX.uniforms['delta'].value = new THREE.Vector2(blurAmountX, 0);
+  effectBlurY.uniforms['delta'].value = new THREE.Vector2(0, blurAmountY);
 
-  effectFocus.uniforms[ 'sampleDistance' ].value = 0.99; //0.94
-  effectFocus.uniforms[ 'waveFactor' ].value = 0.003;  //0.00125
+  effectFocus.uniforms['sampleDistance'].value = 0.99; //0.94
+  effectFocus.uniforms['waveFactor'].value = 0.003; //0.00125
 
-  var renderScene = new THREE.RenderPass( scene, camera );
+  var renderScene = new THREE.RenderPass(scene, camera);
 
-  composer = new THREE.EffectComposer( renderer );
-  composer.addPass( renderScene );
-  composer.addPass( hblur );
-  composer.addPass( vblur );
-  // composer.addPass( effectBlurX );
-  // composer.addPass( effectBlurY );
-  // composer.addPass( effectCopy );
-  // composer.addPass( effectFocus );
-  // composer.addPass( effectFilm );
+  composer = new THREE.EffectComposer(renderer);
+  composer.addPass(renderScene);
+  composer.addPass(hblur);
+  composer.addPass(vblur);
+  composer.addPass(effectBlurX);
+  composer.addPass(effectBlurY);
+  composer.addPass(effectCopy);
+  composer.addPass(effectFocus);
+  // composer.addPass(effectFilm);
 
   vblur.renderToScreen = true;
   effectBlurY.renderToScreen = true;
@@ -494,7 +529,7 @@ function init() {
 
   //
 
-  window.addEventListener( 'resize', onWindowResize, false );
+  window.addEventListener('resize', onWindowResize, false);
 
 }
 
@@ -506,19 +541,19 @@ function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
 
-  renderer.setSize( window.innerWidth, window.innerHeight );
+  renderer.setSize(window.innerWidth, window.innerHeight);
 
   //
 
-  hblur.uniforms[ 'h' ].value =  1 / window.innerWidth;
-  vblur.uniforms[ 'v' ].value =  1 / window.innerHeight;
+  hblur.uniforms['h'].value = 1 / window.innerWidth;
+  vblur.uniforms['v'].value = 1 / window.innerHeight;
 
   var radius = 15;
   var blurAmountX = radius / window.innerWidth;
   var blurAmountY = radius / window.innerHeight;
 
-  effectBlurX.uniforms[ 'delta' ].value = new THREE.Vector2( blurAmountX, 0 );
-  effectBlurY.uniforms[ 'delta' ].value = new THREE.Vector2( 0, blurAmountY );
+  effectBlurX.uniforms['delta'].value = new THREE.Vector2(blurAmountX, 0);
+  effectBlurY.uniforms['delta'].value = new THREE.Vector2(0, blurAmountY);
 
   composer.reset();
 
@@ -528,15 +563,14 @@ function onWindowResize() {
 
 // document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 
-
-function onDocumentMouseDown( event ) {
+function onDocumentMouseDown(event) {
 
   event.preventDefault();
 
   mouseXOnMouseDown = event.clientX - windowHalfX;
   targetRotationOnMouseDown = targetRotation;
 
-  if ( sparksEmitter1.isRunning() ) {
+  if (sparksEmitter1.isRunning()) {
 
     sparksEmitter1.stop();
 
@@ -546,7 +580,7 @@ function onDocumentMouseDown( event ) {
 
   }
 
-  if ( sparksEmitter2.isRunning() ) {
+  if (sparksEmitter2.isRunning()) {
 
     sparksEmitter2.stop();
 
@@ -558,24 +592,23 @@ function onDocumentMouseDown( event ) {
 
 }
 
-function onDocumentMouseMove( event ) {
+function onDocumentMouseMove(event) {
 
   mouseX = event.clientX - windowHalfX;
 
-  targetRotation = targetRotationOnMouseDown + ( mouseX - mouseXOnMouseDown ) * 0.02;
+  targetRotation = targetRotationOnMouseDown + (mouseX - mouseXOnMouseDown) * 0.02;
 
 }
 
-
 function animate() {
 
-  if(keepLooping){
-    requestAnimationFrame( animate );
+  if (keepLooping) {
+    requestAnimationFrame(animate);
   }
 
-  frameCount ++;
+  frameCount++;
 
-  if(frameCount % 2 === 0){
+  if (frameCount % 2 === 0) {
     render();
   }
 
@@ -595,111 +628,141 @@ function render() {
 
   // Pretty cool effect if you enable this
   // particleCloud.rotation.y += 0.05;
-
-  //group.rotation.y += ( targetRotation - group.rotation.y ) * 0.05;
-
   rawL = require('./track.js').posL;
   rawR = require('./track.js').posR;
   var largeMove = require('./track.js').largeMove;
 
-  if(largeMove){
-    //console.log('too much!')
-    sparksEmitter1.addCallback( "created", nothing );
-    sparksEmitter1.addCallback( "updated", goToHell );
-    sparksEmitter2.addCallback( "created", nothing );
-    sparksEmitter2.addCallback( "updated", goToHell );
-  }else{
-    sparksEmitter1.addCallback( "updated", nothing);
-    sparksEmitter1.addCallback( "created", onParticleCreatedL );
-    sparksEmitter2.addCallback( "updated", nothing);
-    sparksEmitter2.addCallback( "created", onParticleCreatedR );
+  //group.rotation.y += ( targetRotation - group.rotation.y ) * 0.05;
+  if (!gameStart) {
+    if (rawL !== undefined && rawR !== undefined) {
+      sparksEmitter1.start();
+      sparksEmitter2.start();
+      gameStart = true;
+    }
   }
 
-  if(rawL !== undefined && rawR !== undefined){
-    recordCountDown ++;
-  }
+  if (gameStart) {
+    recordCountDown++;
 
+    if (largeMove) {
+      //console.log('too much!')
+      sparksEmitter1.addCallback("created", nothing);
+      sparksEmitter1.addCallback("updated", goToHell);
+      sparksEmitter2.addCallback("created", nothing);
+      sparksEmitter2.addCallback("updated", goToHell);
+    } else {
+      sparksEmitter1.addCallback("updated", nothing);
+      sparksEmitter1.addCallback("created", function (p) {
+        onParticleCreatedL(p, 'me');
+      });
+      sparksEmitter2.addCallback("updated", nothing);
+      sparksEmitter2.addCallback("created", function (p) {
+        onParticleCreatedR(p, 'me');
+      });
+    }
 
-  if(!startOther){
-    if(rawL !== undefined){
-      eyeL = viewport(rawL);
-    }
-    if(rawR !== undefined ){
-      eyeR = viewport(rawR);
-    }
-  }else{
-    //the user will think the detection is incorrect!!!
-    //TODE: to make some hints or warning.
-    if(othersRecords.length){
+    if (recordCountDown <= gap) {
+      if (rawL !== undefined) {
+        eyeL = viewport(rawL);
+      }
+      if (rawR !== undefined) {
+        eyeR = viewport(rawR);
+      }
+    } else if (!startOther) {
+      //the user will think the detection is incorrect!!!
+      //TODE: to make some hints or warning.
+      sparksEmitter1.addCallback("created", nothing);
+      sparksEmitter1.addCallback("updated", goToHell);
+      sparksEmitter2.addCallback("created", nothing);
+      sparksEmitter2.addCallback("updated", goToHell);
+    } else if (startOther && othersRecords.length) {
+
       var eye = othersRecords.shift();
       eyeL = viewport(eye[0]);
       eyeR = viewport(eye[1]);
-    }else{
-      keepLooping = false;
+      sparksEmitter1.addCallback("updated", nothing);
+      sparksEmitter1.addCallback("created", function (p) {
+        onParticleCreatedL(p, 'other');
+      });
+      sparksEmitter2.addCallback("updated", nothing);
+      sparksEmitter2.addCallback("created", function (p) {
+        onParticleCreatedR(p, 'other');
+      });
+
+    } else if (!othersRecords.length) {
+      sparksEmitter1.addCallback("created", nothing);
+      sparksEmitter1.addCallback("updated", goToHell);
+      sparksEmitter2.addCallback("created", nothing);
+      sparksEmitter2.addCallback("updated", goToHell);
+      require('./track.js').ctrack.stop();
+      setTimeout(function () {
+        keepLooping = false
+      }, 6000);
     }
+
+    if (recordCountDown > beginRecord && recordCountDown <= endRecord) {
+      records.push([rawL, rawR]);
+      var w = window.innerWidth * (recordCountDown - beginRecord) / (endRecord - beginRecord);
+      document.getElementById('progress').setAttribute('style', 'width:' + w + 'px;');
+    }
+
+    if (recordCountDown === beginRecord) {
+
+      $.ajax({
+        url: '/previous',
+        method: 'GET',
+        //dataType means the data you get
+        dataType: 'json',
+        error: function (err) {
+          console.error(err);
+        },
+        success: function (data) {
+          othersRecords = data.eye;
+          console.log(othersRecords);
+          startOther = true;
+        }
+      });
+    }
+
+    if (recordCountDown === endRecord) {
+      console.log(records.length);
+      $.ajax({
+        url: '/upload',
+        method: 'POST',
+        //contentType means the data you sent
+        contentType: 'application/json; charset=utf-8',
+        //stringify is important
+        //see:
+        //http://encosia.com/asmx-scriptservice-mistake-invalid-json-primitive/
+        data: JSON.stringify({
+          eye: records
+        }),
+        //dataType: 'json',
+        error: function (err) {
+          console.error(err);
+        },
+        success: function () {
+          console.log('(•ω•)');
+        }
+      });
+    }
+
+    // var dR = require('./track.js').dR;
+    // var dL = require('./track.js').dL;
+
+    // if( dR !== null){
+    //   sparksEmitter1.addAction( new SPARKS.Accelerate( 0, 0, 0 ) );
+    //   sparksEmitter1.addAction( new SPARKS.Accelerate( dR[0]*0.1, dR[1]*0.1, 0 ) );
+    // }
+    // if( dL !== null){
+    //   sparksEmitter2.addAction( new SPARKS.Accelerate( 0, 0, 0 ) );
+    //   sparksEmitter2.addAction( new SPARKS.Accelerate( dL[0]*0.1, dL[1]*0.1, 0 ) );
+    // }
   }
-
-  if(recordCountDown > beginRecord && recordCountDown <= endRecord ){
-    records.push([rawL, rawR]);
-    var w = window.innerWidth * (recordCountDown - beginRecord) / (endRecord - beginRecord);
-    document.getElementById('progress').setAttribute('style', 'width:'+  w + 'px;');
-  }
-
-  // if(recordCountDown === beginRecord){
-  //   $.ajax({
-  //     url: '/previous',
-  //     method: 'GET',
-  //     //dataType means the data you get
-  //     dataType: 'json',
-  //     error: function (err) {
-  //       console.error(err);
-  //     },
-  //     success: function (data) {
-  //       othersRecords = data.eye;
-  //       console.log(othersRecords);
-  //       startOther = true;
-  //     }
-  //   });
-  // }
-
-  // if(recordCountDown === endRecord){
-  //   console.log(records.length);
-  //   $.ajax({
-  //     url: '/upload',
-  //     method: 'POST',
-  //     //contentType means the data you sent
-  //     contentType: 'application/json; charset=utf-8',
-  //     //stringify is important
-  //     //see:
-  //     //http://encosia.com/asmx-scriptservice-mistake-invalid-json-primitive/
-  //     data: JSON.stringify({eye: records}),
-  //     //dataType: 'json',
-  //     error: function (err) {
-  //       console.error(err);
-  //     },
-  //     success: function () {
-  //       console.log('(•ω•)');
-  //     }
-  //   });
-  // }
-
-
-  // var dR = require('./track.js').dR;
-  // var dL = require('./track.js').dL;
-
-  // if( dR !== null){
-  //   sparksEmitter1.addAction( new SPARKS.Accelerate( 0, 0, 0 ) );
-  //   sparksEmitter1.addAction( new SPARKS.Accelerate( dR[0]*0.1, dR[1]*0.1, 0 ) );
-  // }
-  // if( dL !== null){
-  //   sparksEmitter2.addAction( new SPARKS.Accelerate( 0, 0, 0 ) );
-  //   sparksEmitter2.addAction( new SPARKS.Accelerate( dL[0]*0.1, dL[1]*0.1, 0 ) );
-  // }
-
   renderer.clear();
 
   // renderer.render( scene, camera );
-  composer.render( 0.1 );
+  composer.render(0.1);
 
 }
 

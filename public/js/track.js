@@ -2,16 +2,18 @@ var inherits = require('inherits');
 var EventEmitter = require('events').EventEmitter;
 inherits(Widget, EventEmitter);
 
-function Widget(){
+function Widget() {
   if (!(this instanceof Widget)) return new Widget();
 }
-Widget.prototype.yell = function(tag, data) {
-  this.emit((tag+'blink'), data);
+Widget.prototype.yell = function (tag, data) {
+  this.emit((tag + 'blink'), data);
 };
 
 var vid = document.getElementById('videoel');
 
-var ctrack = new clm.tracker({useWebGL : true});
+var ctrack = new clm.tracker({
+  useWebGL: true
+});
 ctrack.init(pModel);
 
 //just some magic number
@@ -27,15 +29,16 @@ var blinkR = new Widget();
 exports.largeMove = false;
 var moveTredshold = (videoel.width * 0.16) * (videoel.width * 0.16);
 
-
-function initCam(){
+function initCam() {
   navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
   window.URL = window.URL || window.webkitURL || window.msURL || window.mozURL;
   // check for camerasupport
   if (navigator.getUserMedia) {
     // set up stream
 
-    var videoSelector = {video : true};
+    var videoSelector = {
+      video: true
+    };
     if (window.navigator.appVersion.match(/Chrome\/(.*?) /)) {
       var chromeVersion = parseInt(window.navigator.appVersion.match(/Chrome\/(\d+)\./)[1], 10);
       if (chromeVersion < 20) {
@@ -43,14 +46,14 @@ function initCam(){
       }
     };
 
-    navigator.getUserMedia(videoSelector, function( stream ) {
+    navigator.getUserMedia(videoSelector, function (stream) {
       if (vid.mozCaptureStream) {
         vid.mozSrcObject = stream;
       } else {
         vid.src = (window.URL && window.URL.createObjectURL(stream)) || stream;
       }
       vid.play();
-    }, function() {
+    }, function () {
       alert("There was some problem trying to fetch video from your webcam, using a fallback video instead.");
     });
   } else {
@@ -84,7 +87,7 @@ exports.dR = null;
 function drawLoop() {
   requestAnimFrame(drawLoop);
 
-  frameCount ++;
+  frameCount++;
 
   //overlayCC.clearRect(0, 0, overlay.width, overlay.height);
 
@@ -99,10 +102,10 @@ function drawLoop() {
   if (ctrack.getCurrentPosition()) {
     positions = ctrack.getCurrentPosition();
 
-    if(frameCount < 30){
+    if (frameCount < 30) {
       historyL.push(positions[27]);
       historyR.push(positions[32]);
-    }else{
+    } else {
       lastPosL = historyL.shift();
       lastPosR = historyR.shift();
       historyL.push(positions[27]);
@@ -110,24 +113,24 @@ function drawLoop() {
 
       //if(frameCount % 2 === 0){
       curL = blickDetection(positions[27], lastPosL);
-      if(preL !== curL){
-        if(curL){
+      if (preL !== curL) {
+        if (curL) {
           blinkL.yell('L');
         }
         preL = curL;
       }
       curR = blickDetection(positions[32], lastPosR)
-      if(preR !== curR){
-        if(curR){
+      if (preR !== curR) {
+        if (curR) {
           blinkR.yell('R');
         }
 
         preR = curR;
       }
 
-    //exports.dL = [lastPosL[0] - positions[27][0], lastPosL[1] - positions[27][1]];
-    //exports.dR = [lastPosR[0] - positions[32][0], lastPosR[1] - positions[32][1]];
-    exports.largeMove = (largeMoveDetection(positions[27], lastPosL) || largeMoveDetection(positions[32], lastPosR));
+      //exports.dL = [lastPosL[0] - positions[27][0], lastPosL[1] - positions[27][1]];
+      //exports.dR = [lastPosR[0] - positions[32][0], lastPosR[1] - positions[32][1]];
+      exports.largeMove = (largeMoveDetection(positions[27], lastPosL) || largeMoveDetection(positions[32], lastPosR));
     }
     //}
 
@@ -161,10 +164,9 @@ function drawLoop() {
   }
 }
 
-
-function blickDetection(pos, lastPos){
-  if( pos[1] - lastPos[1] > yMin && pos[1] - lastPos[1] < yMax){
-    if( Math.abs( pos[0] - lastPos[0]) < xMax){
+function blickDetection(pos, lastPos) {
+  if (pos[1] - lastPos[1] > yMin && pos[1] - lastPos[1] < yMax) {
+    if (Math.abs(pos[0] - lastPos[0]) < xMax) {
       return true;
     }
     return false;
@@ -172,10 +174,9 @@ function blickDetection(pos, lastPos){
   return false;
 }
 
-
-function largeMoveDetection(pos, lastPos){
+function largeMoveDetection(pos, lastPos) {
   var dis = (pos[0] - lastPos[0]) * (pos[0] - lastPos[0]) + (pos[1] - lastPos[1]) * (pos[1] - lastPos[1]);
-  if(dis > moveTredshold){
+  if (dis > moveTredshold) {
     return true;
   }
   return false;
@@ -183,3 +184,4 @@ function largeMoveDetection(pos, lastPos){
 
 exports.blinkR = blinkR;
 exports.blinkL = blinkL;
+exports.ctrack = ctrack;

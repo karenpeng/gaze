@@ -35,8 +35,8 @@ app.get('/', function (req, res) {
   res.render('index.jade');
 });
 
-app.get('/previous', function (req, res){
- var query = {};
+app.get('/previous', function (req, res) {
+  var query = {};
   var selet = 'eye';
   var option = {
     limit: 1,
@@ -52,24 +52,25 @@ app.get('/previous', function (req, res){
   });
 });
 
-app.get('/gallery', function (req, res){
-  // var query = {};
-  // var selet = 'eye';
-  // var option = {
-  //   sort: {
-  //     "date": -1
-  //   }
-  // };
-  // Record.find(query, selet, option, function (err, data) {
-  //   if (err) {
-  //     return console.error(err);
-  //   }
-  //   res.send(data);
-  // });
-  // res.render('gallery.jade');
+app.get('/gallery', function (req, res) {
+  var query = {};
+  var selet = 'eye';
+  var option = {
+    sort: {
+      "date": -1
+    }
+  };
+  Record.find(query, selet, option, function (err, data) {
+    if (err) {
+      return console.error(err);
+    }
+    //res.send(data);
+    console.log(data);
+    //res.render('gallery.jade', data);
+  });
 });
 
-app.post('/upload', function (req, res){
+app.post('/upload', function (req, res) {
   var record = new Record();
   record.eye = req.body.eye;
   record.save();
@@ -79,4 +80,3 @@ app.post('/upload', function (req, res){
 app.listen(port, function () {
   console.log('Listening on ' + port);
 });
-
