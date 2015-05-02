@@ -65,8 +65,8 @@ app.get('/gallery', function (req, res) {
       return console.error(err);
     }
     //res.send(data);
-    console.log(data);
-    //res.render('gallery.jade', data);
+    //console.log(data);
+    res.render('gallery.jade', data);
   });
 });
 

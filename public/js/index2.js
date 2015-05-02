@@ -1,10 +1,10 @@
-require('./vendor/CurveExtras.js');
+require('./vendor/three/CurveExtras.js');
 
 var container, stats;
 
 var camera, scene, renderer, splineCamera, cameraHelper, cameraEye;
 
-var text, plane;
+var text, plane, spline;
 
 var targetRotation = 0;
 var targetRotationOnMouseDown = 0;
@@ -18,49 +18,9 @@ var windowHalfY = window.innerHeight / 2;
 var binormal = new THREE.Vector3();
 var normal = new THREE.Vector3();
 
-var pipeSpline = new THREE.SplineCurve3([
-  new THREE.Vector3(0, 10, -10), new THREE.Vector3(10, 0, -10), new THREE.Vector3(20, 0, 0), new THREE.Vector3(30, 0, 10), new THREE.Vector3(30, 0, 20), new THREE.Vector3(20, 0, 30), new THREE.Vector3(10, 0, 30), new THREE.Vector3(0, 0, 30), new THREE.Vector3(-10, 10, 30), new THREE.Vector3(-10, 20, 30), new THREE.Vector3(0, 30, 30), new THREE.Vector3(10, 30, 30), new THREE.Vector3(20, 30, 15), new THREE.Vector3(10, 30, 10), new THREE.Vector3(0, 30, 10), new THREE.Vector3(-10, 20, 10), new THREE.Vector3(-10, 10, 10), new THREE.Vector3(0, 0, 10), new THREE.Vector3(10, -10, 10), new THREE.Vector3(20, -15, 10), new THREE.Vector3(30, -15, 10), new THREE.Vector3(40, -15, 10), new THREE.Vector3(50, -15, 10), new THREE.Vector3(60, 0, 10), new THREE.Vector3(70, 0, 0), new THREE.Vector3(80, 0, 0), new THREE.Vector3(90, 0, 0), new THREE.Vector3(100, 0, 0)
-]);
-
-var sampleClosedSpline = new THREE.ClosedSplineCurve3([
-  new THREE.Vector3(0, -40, -40),
-  new THREE.Vector3(0, 40, -40),
-  new THREE.Vector3(0, 140, -40),
-  new THREE.Vector3(0, 40, 40),
-  new THREE.Vector3(0, -40, 40),
-]);
-
-// Keep a dictionary of Curve instances
-var splines = {
-  GrannyKnot: new THREE.Curves.GrannyKnot(),
-  HeartCurve: new THREE.Curves.HeartCurve(3.5),
-  VivianiCurve: new THREE.Curves.VivianiCurve(70),
-  KnotCurve: new THREE.Curves.KnotCurve(),
-  HelixCurve: new THREE.Curves.HelixCurve(),
-  TrefoilKnot: new THREE.Curves.TrefoilKnot(),
-  TorusKnot: new THREE.Curves.TorusKnot(20),
-  CinquefoilKnot: new THREE.Curves.CinquefoilKnot(20),
-  TrefoilPolynomialKnot: new THREE.Curves.TrefoilPolynomialKnot(14),
-  FigureEightPolynomialKnot: new THREE.Curves.FigureEightPolynomialKnot(),
-  DecoratedTorusKnot4a: new THREE.Curves.DecoratedTorusKnot4a(),
-  DecoratedTorusKnot4b: new THREE.Curves.DecoratedTorusKnot4b(),
-  DecoratedTorusKnot5a: new THREE.Curves.DecoratedTorusKnot5a(),
-  DecoratedTorusKnot5c: new THREE.Curves.DecoratedTorusKnot5c(),
-  PipeSpline: pipeSpline,
-  SampleClosedSpline: sampleClosedSpline
-};
+splines = require('./spline.js');
 
 extrudePath = new THREE.Curves.TrefoilKnot();
-
-var dropdown = '<select id="dropdown" onchange="addTube(this.value)">';
-
-var s;
-for (s in splines) {
-  dropdown += '<option value="' + s + '"';
-  dropdown += '>' + s + '</option>';
-}
-
-dropdown += '</select>';
 
 var closed2 = true;
 var parent;
@@ -69,17 +29,14 @@ var animation = false,
   lookAhead = false;
 var scale;
 var showCameraHelper = false;
+var value = 0;
+var segments = 100;
+var radiusSegments = 4;
+var closed2 = true;
 
 function addTube() {
 
-  var value = document.getElementById('dropdown').value;
-
-  var segments = parseInt(document.getElementById('segments').value);
-  closed2 = document.getElementById('closed').checked;
-
-  var radiusSegments = parseInt(document.getElementById('radiusSegments').value);
-
-  console.log('adding tube', value, closed2, radiusSegments);
+  //console.log('adding tube', value, closed2, radiusSegments);
   if (tubeMesh) parent.remove(tubeMesh);
 
   extrudePath = splines[value];
@@ -87,14 +44,7 @@ function addTube() {
   tube = new THREE.TubeGeometry(extrudePath, segments, 2, radiusSegments, closed2);
 
   addGeometry(tube, 0xff00ff);
-  setScale();
-
-}
-
-function setScale() {
-
-  scale = parseInt(document.getElementById('scale').value);
-  tubeMesh.scale.set(scale, scale, scale);
+  //setScale();
 
 }
 
@@ -118,23 +68,6 @@ function addGeometry(geometry, color) {
 
 }
 
-function animateCamera(toggle) {
-
-  if (toggle) {
-
-    animation = animation === false;
-    document.getElementById('animation').value = 'Camera Spline Animation View: ' + (animation ? 'ON' : 'OFF');
-
-  }
-
-  lookAhead = document.getElementById('lookAhead').checked;
-
-  showCameraHelper = document.getElementById('cameraHelper').checked;
-
-  cameraHelper.visible = showCameraHelper;
-  cameraEye.visible = showCameraHelper;
-}
-
 init();
 animate();
 
@@ -142,26 +75,6 @@ function init() {
 
   container = document.createElement('div');
   document.body.appendChild(container);
-
-  var info = document.createElement('div');
-  info.style.position = 'absolute';
-  info.style.top = '10px';
-  info.style.width = '100%';
-  info.style.textAlign = 'center';
-  info.innerHTML = 'Spline Extrusion Examples by <a href="http://www.lab4games.net/zz85/blog">zz85</a><br/>Select spline:';
-
-  info.innerHTML += dropdown;
-
-  info.innerHTML += '<br/>Scale: <select id="scale" onchange="setScale()"><option>1</option><option>2</option><option selected>4</option><option>6</option><option>10</option></select>';
-  info.innerHTML += '<br/>Extrusion Segments: <select onchange="addTube()" id="segments"><option>50</option><option selected>100</option><option>200</option><option>400</option></select>';
-  info.innerHTML += '<br/>Radius Segments: <select id="radiusSegments" onchange="addTube()"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>8</option><option>12</option></select>';
-  info.innerHTML += '<br/>Closed:<input id="closed" onchange="addTube()" type="checkbox" checked />';
-
-  info.innerHTML += '<br/><br/><input id="animation" type="button" onclick="animateCamera(true)" value="Camera Spline Animation View: OFF"/><br/> Look Ahead <input id="lookAhead" type="checkbox" onchange="animateCamera()" /> Camera Helper <input id="cameraHelper" type="checkbox" onchange="animateCamera()" />';
-
-  container.appendChild(info);
-
-  //
 
   camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, 1000);
   camera.position.set(0, 50, 500);
