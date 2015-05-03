@@ -34,6 +34,13 @@ var segments = 100;
 var radiusSegments = 4;
 var closed2 = true;
 
+window.onkeydown = function (e) {
+  if (e.which === 32) {
+    e.preventDefault();
+    animation = !animation;
+  }
+}
+
 function addTube() {
 
   //console.log('adding tube', value, closed2, radiusSegments);
@@ -56,12 +63,7 @@ function addGeometry(geometry, color) {
     new THREE.MeshLambertMaterial({
       color: color
     }),
-    new THREE.MeshBasicMaterial({
-      color: 0x000000,
-      opacity: 0.3,
-      wireframe: true,
-      transparent: true
-    })
+    new THREE.MeshNormalMaterial()
   ]);
 
   parent.add(tubeMesh);
@@ -77,7 +79,7 @@ function init() {
   document.body.appendChild(container);
 
   camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, 1000);
-  camera.position.set(0, 50, 500);
+  camera.position.set(0, 80, 300);
 
   scene = new THREE.Scene();
 
