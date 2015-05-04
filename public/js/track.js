@@ -161,6 +161,7 @@ function drawLoop() {
 
     exports.posL = [Math.round(positions[27][0]), Math.round(positions[27][1])];
     exports.posR = [Math.round(positions[32][0]), Math.round(positions[32][1])];
+    //console.log(exports.posL[1], exports.posR[1])
   }
 }
 

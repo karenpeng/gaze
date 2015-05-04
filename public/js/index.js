@@ -46,7 +46,7 @@ var h = document.getElementById('videoel').height;
 var frameCount = 0;
 var keepLooping = true;
 
-var nothing, goToHell, onParticleCreatedL, onParticleCreatedR;
+var nothing, goToHell;
 
 var records = [];
 var othersRecords = [];
@@ -72,10 +72,8 @@ var attributes = require('./particle.js').attributes;
 var composer;
 
 function viewport(pos) {
-  var w = 100;
-  var h = 75;
   var x = ((w - pos[0]) / w * 2 - 1) * windowHalfX;
-  var y = (-pos[1] / h * 2 + 1) * windowHalfX * 1.5;
+  var y = (-pos[1] / h * 2 + 1) * windowHalfX;
   return [x, y];
 }
 
@@ -199,8 +197,7 @@ function init() {
 
   };
 
-  onParticleCreatedL = function (p, c) {
-
+  onParticleCreated = function (p, c, index) {
     var position = p.position;
     p.target.position = position;
 
@@ -212,27 +209,34 @@ function init() {
       // values_size[target]
       // values_color[target]
       switch (c) {
-
       case 'me':
         hue += 0.0001 * delta;
         if (hue < 0.4) hue += 0.4;
         if (hue > 0.7) hue -= 0.7;
         break;
-
       case 'other':
         hue += 0.0003 * delta;
         if (hue < 0.6) hue += 0.6;
         if (hue > 0.7) hue -= 0.7;
         break;
-
       }
       // TODO Create a PointOnShape Action/Zone in the particle engine
 
       timeOnShapePath += 0.00035 * delta;
       if (timeOnShapePath > 1) timeOnShapePath -= 1;
 
-      emitterpos.x = eyeL[0];
-      emitterpos.y = eyeL[1];
+      switch (index) {
+      case 0:
+        emitterpos.x = eyeR[0];
+        emitterpos.y = eyeR[1];
+        break;
+      case 1:
+        emitterpos.x = eyeL[0];
+        emitterpos.y = eyeL[1];
+        break;
+      }
+
+      //console.log(eyeL[1], eyeR[1])
 
       // pointLight.position.copy( emitterpos );
       pointLight.position.x = emitterpos.x;
@@ -246,60 +250,7 @@ function init() {
       pointLight.color.setHSL(hue, SATURATION, 0.9);
 
     };
-
-  };
-
-  onParticleCreatedR = function (p, c) {
-
-    var position = p.position;
-    p.target.position = position;
-
-    var target = p.target;
-
-    if (target) {
-
-      // console.log(target,particles.vertices[target]);
-      // values_size[target]
-      // values_color[target]
-
-      switch (c) {
-
-      case 'me':
-        hue += 0.0001 * delta;
-        if (hue < 0.4) hue += 0.4;
-        if (hue > 0.7) hue -= 0.7;
-        break;
-
-      case 'other':
-        hue += 0.0003 * delta;
-        if (hue < 0.6) hue += 0.6;
-        if (hue > 0.7) hue -= 0.7;
-        break;
-
-      }
-
-      // TODO Create a PointOnShape Action/Zone in the particle engine
-
-      timeOnShapePath += 0.00035 * delta;
-      if (timeOnShapePath > 1) timeOnShapePath -= 1;
-
-      emitterpos.x = eyeR[0];
-      emitterpos.y = eyeR[1];
-
-      // pointLight.position.copy( emitterpos );
-      pointLight.position.x = emitterpos.x;
-      pointLight.position.y = emitterpos.y;
-      pointLight.position.z = 100;
-
-      particles.vertices[target] = p.position;
-
-      values_color[target].setHSL(hue, SATURATION, 0.1);
-
-      pointLight.color.setHSL(hue, SATURATION, 0.9);
-
-    };
-
-  };
+  }
 
   var onParticleDead = function (particle) {
 
@@ -324,73 +275,6 @@ function init() {
 
   };
 
-  sparksEmitter1 = new SPARKS.Emitter(new SPARKS.SteadyCounter(MAX_NUM));
-
-  emitterpos = new THREE.Vector3(0, 0, 0);
-
-  sparksEmitter1.addInitializer(new SPARKS.Position(new SPARKS.PointZone(emitterpos)));
-  sparksEmitter1.addInitializer(new SPARKS.Lifetime(0, LIFE));
-  sparksEmitter1.addInitializer(new SPARKS.Target(null, setTargetParticle));
-
-  sparksEmitter1.addInitializer(new SPARKS.Velocity(new SPARKS.PointZone(new THREE.Vector3(0, -5, 1))));
-
-  sparksEmitter1.addAction(new SPARKS.Age(TWEEN.Easing.Quartic.In));
-  //sparksEmitter.addAction( new SPARKS.Age() );
-  sparksEmitter1.addAction(new SPARKS.Accelerate(Math.random() * -(ACCELERATION_X), 0, -20));
-  sparksEmitter1.addAction(new SPARKS.Move());
-  sparksEmitter1.addAction(new SPARKS.RandomDrift(RANDOMESS_X, 10, 200));
-
-  sparksEmitter1.addCallback("created", function (p) {
-    onParticleCreatedR(p, 'me');
-  });
-  sparksEmitter1.addCallback("dead", onParticleDead);
-
-  // sparksEmitter1.start();
-
-  sparksEmitter2 = new SPARKS.Emitter(new SPARKS.SteadyCounter(MAX_NUM));
-  sparksEmitter2.addInitializer(new SPARKS.Position(new SPARKS.PointZone(emitterpos)));
-  sparksEmitter2.addInitializer(new SPARKS.Lifetime(0, LIFE));
-  sparksEmitter2.addInitializer(new SPARKS.Target(null, setTargetParticle));
-
-  sparksEmitter2.addInitializer(new SPARKS.Velocity(new SPARKS.PointZone(new THREE.Vector3(0, -5, 1))));
-
-  sparksEmitter2.addAction(new SPARKS.Age(TWEEN.Easing.Quartic.In));
-  //sparksEmitter.addAction( new SPARKS.Age() );
-  sparksEmitter2.addAction(new SPARKS.Accelerate(Math.random() * ACCELERATION_X, 0, -20));
-  sparksEmitter2.addAction(new SPARKS.Move());
-  sparksEmitter2.addAction(new SPARKS.RandomDrift(RANDOMESS_X, 10, 200));
-
-  sparksEmitter2.addCallback("created", function (p) {
-    onParticleCreatedL(p, 'me');
-  });
-  sparksEmitter2.addCallback("dead", onParticleDead);
-
-  // sparksEmitter2.start();
-
-  blinkL.on('Lblink', function () {
-    //console.log('left blink!');
-    sparksEmitter2.addCallback("created", nothing);
-    sparksEmitter2.addCallback("updated", goToHell);
-    setTimeout(function () {
-      sparksEmitter2.addCallback("updated", nothing);
-      sparksEmitter2.addCallback("created", function (p) {
-        onParticleCreatedL(p, 'me');
-      });
-    }, Math.random() * 120 + 80);
-  });
-
-  blinkR.on('Rblink', function () {
-    //console.log('right blink!');
-    sparksEmitter1.addCallback("created", nothing);
-    sparksEmitter1.addCallback("updated", goToHell);
-    setTimeout(function () {
-      sparksEmitter1.addCallback("updated", nothing);
-      sparksEmitter1.addCallback("created", function (p) {
-        onParticleCreatedR(p, 'me');
-      });
-    }, Math.random() * 120 + 80);
-  });
-
   nothing = function () {
     //do nothing
   }
@@ -398,6 +282,66 @@ function init() {
   goToHell = function (particle) {
     particle.age += 1;
   };
+
+  function sparkConfig(index) {
+
+    sparksEmitters[index] = new SPARKS.Emitter(new SPARKS.SteadyCounter(MAX_NUM));
+
+    emitterpos = new THREE.Vector3(0, 0, 0);
+
+    sparksEmitters[index].addInitializer(new SPARKS.Position(new SPARKS.PointZone(emitterpos)));
+    sparksEmitters[index].addInitializer(new SPARKS.Lifetime(0, LIFE));
+    sparksEmitters[index].addInitializer(new SPARKS.Target(null, setTargetParticle));
+
+    sparksEmitters[index].addInitializer(new SPARKS.Velocity(new SPARKS.PointZone(new THREE.Vector3(0, -5, 1))));
+
+    sparksEmitters[index].addAction(new SPARKS.Age(TWEEN.Easing.Quartic.In));
+    //sparksEmitter.addAction( new SPARKS.Age() );
+
+    sparksEmitters[index].addAction(new SPARKS.Move());
+
+    sparksEmitters[index].addCallback("created", function (p) {
+      onParticleCreated(p, 'me', index);
+    });
+    sparksEmitters[index].addCallback("dead", onParticleDead);
+
+    switch (index) {
+    case 0:
+      sparksEmitters[index].addAction(new SPARKS.Accelerate(Math.random() * -(ACCELERATION_X), 0, -20));
+      break;
+    case 1:
+      sparksEmitters[index].addAction(new SPARKS.Accelerate(Math.random() * ACCELERATION_X, 0, -20));
+      break;
+    }
+  }
+
+  sparkConfig(0);
+  sparkConfig(1);
+
+  // sparksEmitter1.start();
+  blinkR.on('Rblink', function () {
+    //console.log('right blink!');
+    sparksEmitters[0].addCallback("created", nothing);
+    sparksEmitters[0].addCallback("updated", goToHell);
+    setTimeout(function () {
+      sparksEmitters[0].addCallback("updated", nothing);
+      sparksEmitters[0].addCallback("created", function (p) {
+        onParticleCreated(p, 'me', 0);
+      });
+    }, Math.random() * 120 + 80);
+  });
+
+  blinkL.on('Lblink', function () {
+    //console.log('left blink!');
+    sparksEmitters[1].addCallback("created", nothing);
+    sparksEmitters[1].addCallback("updated", goToHell);
+    setTimeout(function () {
+      sparksEmitters[1].addCallback("updated", nothing);
+      sparksEmitters[1].addCallback("created", function (p) {
+        onParticleCreated(p, 'me', 1);
+      });
+    }, Math.random() * 120 + 80);
+  });
 
   // End Particles
 
@@ -413,10 +357,6 @@ function init() {
   container.appendChild(stats.domElement);
 
   composer = require('./particle.js').effectConfig(scene, camera, renderer);
-
-  // document.addEventListener( 'mousedown', onDocumentMouseDown, false );
-
-  //
 
   window.addEventListener('resize', onWindowResize, false);
 
@@ -451,43 +391,6 @@ function onWindowResize() {
 //
 
 // document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-
-function onDocumentMouseDown(event) {
-
-  event.preventDefault();
-
-  mouseXOnMouseDown = event.clientX - windowHalfX;
-  targetRotationOnMouseDown = targetRotation;
-
-  if (sparksEmitter1.isRunning()) {
-
-    sparksEmitter1.stop();
-
-  } else {
-
-    sparksEmitter1.start();
-
-  }
-
-  if (sparksEmitter2.isRunning()) {
-
-    sparksEmitter2.stop();
-
-  } else {
-
-    sparksEmitter2.start();
-
-  }
-
-}
-
-function onDocumentMouseMove(event) {
-
-  mouseX = event.clientX - windowHalfX;
-
-  targetRotation = targetRotationOnMouseDown + (mouseX - mouseXOnMouseDown) * 0.02;
-
-}
 
 function animate() {
 
@@ -524,8 +427,8 @@ function render() {
   //group.rotation.y += ( targetRotation - group.rotation.y ) * 0.05;
   if (!gameStart) {
     if (rawL !== undefined && rawR !== undefined) {
-      sparksEmitter1.start();
-      sparksEmitter2.start();
+      sparksEmitters[0].start();
+      sparksEmitters[1].start();
       gameStart = true;
     }
   }
@@ -535,18 +438,17 @@ function render() {
 
     if (largeMove) {
       //console.log('too much!')
-      sparksEmitter1.addCallback("created", nothing);
-      sparksEmitter1.addCallback("updated", goToHell);
-      sparksEmitter2.addCallback("created", nothing);
-      sparksEmitter2.addCallback("updated", goToHell);
-    } else {
-      sparksEmitter1.addCallback("updated", nothing);
-      sparksEmitter1.addCallback("created", function (p) {
-        onParticleCreatedL(p, 'me');
+      sparksEmitters.forEach(function (sparksEmitter) {
+        sparksEmitter.addCallback("created", nothing);
+        sparksEmitter.addCallback("updated", goToHell);
       });
-      sparksEmitter2.addCallback("updated", nothing);
-      sparksEmitter2.addCallback("created", function (p) {
-        onParticleCreatedR(p, 'me');
+    } else {
+      sparksEmitters.forEach(function (sparksEmitter, index) {
+        sparksEmitter.addCallback("created", nothing);
+        sparksEmitter.addCallback("created", function (p) {
+          onParticleCreated(p, 'me', index);
+        });
+
       });
     }
 
@@ -557,32 +459,35 @@ function render() {
       if (rawR !== undefined) {
         eyeR = viewport(rawR);
       }
+      //console.log(rawL[1], rawR[1])
+      //console.log(eyeL[1], eyeR[1])
     } else if (!startOther) {
       //the user will think the detection is incorrect!!!
       //TODE: to make some hints or warning.
-      sparksEmitter1.addCallback("created", nothing);
-      sparksEmitter1.addCallback("updated", goToHell);
-      sparksEmitter2.addCallback("created", nothing);
-      sparksEmitter2.addCallback("updated", goToHell);
+      sparksEmitters.forEach(function (sparksEmitter) {
+        sparksEmitter.addCallback("created", nothing);
+        sparksEmitter.addCallback("updated", goToHell);
+      });
+
     } else if (startOther && othersRecords.length) {
 
       var eye = othersRecords.shift();
       eyeL = viewport(eye[0]);
       eyeR = viewport(eye[1]);
-      sparksEmitter1.addCallback("updated", nothing);
-      sparksEmitter1.addCallback("created", function (p) {
-        onParticleCreatedL(p, 'other');
-      });
-      sparksEmitter2.addCallback("updated", nothing);
-      sparksEmitter2.addCallback("created", function (p) {
-        onParticleCreatedR(p, 'other');
+      sparksEmitters.forEach(function (sparksEmitter, index) {
+        sparksEmitter.addCallback("created", nothing);
+        sparksEmitter.addCallback("created", function (p) {
+          onParticleCreated(p, 'other', index);
+
+        });
+
       });
 
     } else if (!othersRecords.length) {
-      sparksEmitter1.addCallback("created", nothing);
-      sparksEmitter1.addCallback("updated", goToHell);
-      sparksEmitter2.addCallback("created", nothing);
-      sparksEmitter2.addCallback("updated", goToHell);
+      sparksEmitters.forEach(function (sparksEmitter) {
+        sparksEmitter.addCallback("created", nothing);
+        sparksEmitter.addCallback("updated", goToHell);
+      });
       require('./track.js').ctrack.stop();
       setTimeout(function () {
         keepLooping = false
