@@ -28,8 +28,10 @@ var parent;
 var tube, tubeMesh;
 var animation = false,
   lookAhead = false;
-var scale;
+lookAhead = true;
+var scale = 4;
 var showCameraHelper = false;
+showCameraHelper = true;
 var value = 0;
 var segments = 100;
 var radiusSegments = 4;
@@ -42,6 +44,12 @@ window.onkeydown = function (e) {
   }
 }
 
+function setScale() {
+
+  tubeMesh.scale.set(scale, scale, scale);
+
+}
+
 function addTube() {
 
   //console.log('adding tube', value, closed2, radiusSegments);
@@ -49,10 +57,11 @@ function addTube() {
 
   extrudePath = splines[value];
 
-  tube = new THREE.TubeGeometry(extrudePath, segments, 2, radiusSegments, closed2);
+  // tube = new THREE.TubeGeometry(extrudePath, segments, 2, radiusSegments, closed2);
+  tube = new THREE.TubeGeometry(extrudePath, 100, 1, 4, true);
 
   addGeometry(tube, 0xff00ff);
-  //setScale();
+  setScale();
 
 }
 
@@ -80,7 +89,7 @@ function init() {
   document.body.appendChild(container);
 
   camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, 1000);
-  camera.position.set(0, 80, 300);
+  camera.position.set(0, 50, 500);
 
   scene = new THREE.Scene();
 
@@ -102,7 +111,7 @@ function init() {
 
   // Debug point
 
-  cameraEye = new THREE.Mesh(new THREE.SphereGeometry(5), new THREE.MeshBasicMaterial({
+  cameraEye = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial({
     color: 0xdddddd
   }));
   parent.add(cameraEye);
@@ -115,7 +124,7 @@ function init() {
   renderer = new THREE.WebGLRenderer({
     antialias: true
   });
-  renderer.setClearColor(0xf0f0f0);
+  renderer.setClearColor(0x000000);
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   container.appendChild(renderer.domElement);
@@ -125,9 +134,9 @@ function init() {
   stats.domElement.style.top = '0px';
   container.appendChild(stats.domElement);
 
-  renderer.domElement.addEventListener('mousedown', onDocumentMouseDown, false);
-  renderer.domElement.addEventListener('touchstart', onDocumentTouchStart, false);
-  renderer.domElement.addEventListener('touchmove', onDocumentTouchMove, false);
+  // renderer.domElement.addEventListener('mousedown', onDocumentMouseDown, false);
+  // renderer.domElement.addEventListener('touchstart', onDocumentTouchStart, false);
+  // renderer.domElement.addEventListener('touchmove', onDocumentTouchMove, false);
 
   //
 
@@ -223,8 +232,7 @@ function animate() {
 
 }
 
-function render() {
-
+function rollerCoaster() {
   // Try Animate Camera Along Spline
   var time = Date.now();
   var looptime = 20 * 1000;
@@ -268,9 +276,17 @@ function render() {
 
   cameraHelper.update();
 
-  parent.rotation.y += (targetRotation - parent.rotation.y) * 0.05;
+  //parent.rotation.y += (targetRotation - parent.rotation.y) * 0.05;
+}
 
-  renderer.render(scene, animation === true ? splineCamera : camera);
+function render() {
+  rollerCoaster();
+  if (animation) {
+    // rollerCoaster();
+    renderer.render(scene, splineCamera);
+  } else {
+    renderer.render(scene, camera);
+  }
 
 }
 },{"./spline.js":"/Users/karen/Documents/my_project/gaze/public/js/spline.js","./vendor/three/CurveExtras.js":"/Users/karen/Documents/my_project/gaze/public/js/vendor/three/CurveExtras.js"}],"/Users/karen/Documents/my_project/gaze/public/js/spline.js":[function(require,module,exports){

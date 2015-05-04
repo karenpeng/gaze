@@ -27,9 +27,9 @@ app.use(express.static(__dirname + '/public'));
 mongoose.connect(config.db);
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', function callback() {
-  console.log('yay! database connected');
-});
+// db.once('open', function callback() {
+//   console.log('yay! database connected');
+// });
 
 app.get('/', function (req, res) {
   res.render('index.jade');
@@ -53,22 +53,23 @@ app.get('/previous', function (req, res) {
 });
 
 app.get('/gallery', function (req, res) {
-  var query = {};
-  var selet = 'eye';
-  var option = {
-    sort: {
-      "date": -1
-    }
-  };
-  Record.find(query, selet, option, function (err, data) {
-    if (err) {
-      return console.error(err);
-    }
-    //res.send(data);
-    //console.log(data);
-    //res.render('gallery.jade', data);
-    res.render('gallery.jade');
-  });
+  // var query = {};
+  // var selet = 'eye';
+  // var option = {
+  //   sort: {
+  //     "date": -1
+  //   }
+  // };
+  // Record.find(query, selet, option, function (err, data) {
+  //   if (err) {
+  //     return console.error(err);
+  //   }
+  //   //res.send(data);
+  //   //console.log(data);
+  //   //res.render('gallery.jade', data);
+  //   res.render('gallery.jade');
+  // });
+  res.render('gallery.jade');
 });
 
 app.post('/upload', function (req, res) {
