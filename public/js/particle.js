@@ -104,51 +104,51 @@ exports.attributes = {
 
 // });
 
-exports.effectConfig = function (scene, camera, renderer) {
-  // POST PROCESSING
+// exports.effectConfig = function (scene, camera, renderer) {
+//   // POST PROCESSING
 
-  var effectFocus = new THREE.ShaderPass(THREE.FocusShader);
+//   var effectFocus = new THREE.ShaderPass(THREE.FocusShader);
 
-  var effectCopy = new THREE.ShaderPass(THREE.CopyShader);
-  effectFilm = new THREE.FilmPass(0.5, 0.25, 2048, false);
+//   var effectCopy = new THREE.ShaderPass(THREE.CopyShader);
+//   effectFilm = new THREE.FilmPass(0.5, 0.25, 2048, false);
 
-  var shaderBlur = THREE.TriangleBlurShader;
-  effectBlurX = new THREE.ShaderPass(shaderBlur, 'texture');
-  effectBlurY = new THREE.ShaderPass(shaderBlur, 'texture');
+//   var shaderBlur = THREE.TriangleBlurShader;
+//   effectBlurX = new THREE.ShaderPass(shaderBlur, 'texture');
+//   effectBlurY = new THREE.ShaderPass(shaderBlur, 'texture');
 
-  var radius = 15;
-  var blurAmountX = radius / window.innerWidth;
-  var blurAmountY = radius / window.innerHeight;
+//   var radius = 15;
+//   var blurAmountX = radius / window.innerWidth;
+//   var blurAmountY = radius / window.innerHeight;
 
-  hblur = new THREE.ShaderPass(THREE.HorizontalBlurShader);
-  vblur = new THREE.ShaderPass(THREE.VerticalBlurShader);
+//   hblur = new THREE.ShaderPass(THREE.HorizontalBlurShader);
+//   vblur = new THREE.ShaderPass(THREE.VerticalBlurShader);
 
-  hblur.uniforms['h'].value = 1 / window.innerWidth;
-  vblur.uniforms['v'].value = 1 / window.innerHeight;
+//   hblur.uniforms['h'].value = 1 / window.innerWidth;
+//   vblur.uniforms['v'].value = 1 / window.innerHeight;
 
-  effectBlurX.uniforms['delta'].value = new THREE.Vector2(blurAmountX, 0);
-  effectBlurY.uniforms['delta'].value = new THREE.Vector2(0, blurAmountY);
+//   effectBlurX.uniforms['delta'].value = new THREE.Vector2(blurAmountX, 0);
+//   effectBlurY.uniforms['delta'].value = new THREE.Vector2(0, blurAmountY);
 
-  effectFocus.uniforms['sampleDistance'].value = 0.99; //0.94
-  effectFocus.uniforms['waveFactor'].value = 0.003; //0.00125
+//   effectFocus.uniforms['sampleDistance'].value = 0.99; //0.94
+//   effectFocus.uniforms['waveFactor'].value = 0.003; //0.00125
 
-  var renderScene = new THREE.RenderPass(scene, camera);
+//   var renderScene = new THREE.RenderPass(scene, camera);
 
-  composer = new THREE.EffectComposer(renderer);
-  composer.addPass(renderScene);
-  composer.addPass(hblur);
-  composer.addPass(vblur);
-  composer.addPass(effectBlurX);
-  composer.addPass(effectBlurY);
-  composer.addPass(effectCopy);
-  composer.addPass(effectFocus);
-  // composer.addPass(effectFilm);
+//   composer = new THREE.EffectComposer(renderer);
+//   composer.addPass(renderScene);
+//   composer.addPass(hblur);
+//   composer.addPass(vblur);
+//   composer.addPass(effectBlurX);
+//   composer.addPass(effectBlurY);
+//   composer.addPass(effectCopy);
+//   composer.addPass(effectFocus);
+//   // composer.addPass(effectFilm);
 
-  vblur.renderToScreen = true;
-  effectBlurY.renderToScreen = true;
-  effectFocus.renderToScreen = true;
-  effectCopy.renderToScreen = true;
-  effectFilm.renderToScreen = true;
+//   vblur.renderToScreen = true;
+//   effectBlurY.renderToScreen = true;
+//   effectFocus.renderToScreen = true;
+//   effectCopy.renderToScreen = true;
+//   effectFilm.renderToScreen = true;
 
-  return composer;
-}
+//   return composer;
+// }

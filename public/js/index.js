@@ -26,7 +26,7 @@ var windowHalfY = window.innerHeight / 2;
 var delta = 1,
   clock = new THREE.Clock();
 
-var heartShape, particleCloud, sparksEmitter, emitterPos;
+var heartShape, particleCloud;
 var _rotation = 0;
 var timeOnShapePath = 0;
 
@@ -34,7 +34,7 @@ var composer;
 var effectBlurX, effectBlurY, hblur, vblur;
 
 var sparksEmitters = [];
-var sparksEmitter1, sparksEmitter2;
+var emitterpos = [];
 
 var eyeL, eyeR;
 
@@ -60,20 +60,21 @@ var gameStart = false;
 var RADIUS = 40;
 var MAX_NUM = 10;
 var SATURATION = 0.3;
-var ACCELERATION_X = 6;
-var RANDOMESS_X = 80;
-var LIFE = 2.6;
+var ACCELERATION_X = 0;
+var RANDOMESS_X = 10;
+var LIFE = 3;
+var otherBegin = false;
 
 var newpos = require('./particle.js').newpos;
 var Pool = require('./particle.js').Pool;
 var attributes = require('./particle.js').attributes;
 //var uniforms = require('./particle.js').uniforms;
 //var shaderMaterial = require('./particle.js').shaderMaterial;
-var composer;
+//var composer;
 
 function viewport(pos) {
-  var x = ((w - pos[0]) / w * 2 - 1) * windowHalfX;
-  var y = (-pos[1] / h * 2 + 1) * windowHalfX;
+  var x = ((w - pos[0]) / w * 2 - 1) * windowHalfX * 1.2;
+  var y = (-pos[1] / h * 2 + 1) * windowHalfX * 1.5;
   return [x, y];
 }
 
@@ -210,7 +211,7 @@ function init() {
       // values_color[target]
       switch (c) {
       case 'me':
-        hue += 0.0001 * delta;
+        hue += 0.00008 * delta;
         if (hue < 0.4) hue += 0.4;
         if (hue > 0.7) hue -= 0.7;
         break;
@@ -227,12 +228,12 @@ function init() {
 
       switch (index) {
       case 0:
-        emitterpos.x = eyeR[0];
-        emitterpos.y = eyeR[1];
+        emitterpos[index].x = eyeR[0];
+        emitterpos[index].y = eyeR[1];
         break;
       case 1:
-        emitterpos.x = eyeL[0];
-        emitterpos.y = eyeL[1];
+        emitterpos[index].x = eyeL[0];
+        emitterpos[index].y = eyeL[1];
         break;
       }
 
@@ -287,9 +288,9 @@ function init() {
 
     sparksEmitters[index] = new SPARKS.Emitter(new SPARKS.SteadyCounter(MAX_NUM));
 
-    emitterpos = new THREE.Vector3(0, 0, 0);
+    emitterpos[index] = new THREE.Vector3(0, 0, 0);
 
-    sparksEmitters[index].addInitializer(new SPARKS.Position(new SPARKS.PointZone(emitterpos)));
+    sparksEmitters[index].addInitializer(new SPARKS.Position(new SPARKS.PointZone(emitterpos[index])));
     sparksEmitters[index].addInitializer(new SPARKS.Lifetime(0, LIFE));
     sparksEmitters[index].addInitializer(new SPARKS.Target(null, setTargetParticle));
 
@@ -299,6 +300,7 @@ function init() {
     //sparksEmitter.addAction( new SPARKS.Age() );
 
     sparksEmitters[index].addAction(new SPARKS.Move());
+    sparksEmitters[index].addAction(new SPARKS.RandomDrift(RANDOMESS_X, 5, 100));
 
     sparksEmitters[index].addCallback("created", function (p) {
       onParticleCreated(p, 'me', index);
@@ -344,6 +346,7 @@ function init() {
   });
 
   // End Particles
+  //
 
   renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -356,7 +359,50 @@ function init() {
   stats.domElement.style.left = '0px';
   container.appendChild(stats.domElement);
 
-  composer = require('./particle.js').effectConfig(scene, camera, renderer);
+  // composer = require('./particle.js').effectConfig(scene, camera, renderer);
+
+  var effectFocus = new THREE.ShaderPass(THREE.FocusShader);
+
+  var effectCopy = new THREE.ShaderPass(THREE.CopyShader);
+  effectFilm = new THREE.FilmPass(0.5, 0.25, 2048, false);
+
+  var shaderBlur = THREE.TriangleBlurShader;
+  effectBlurX = new THREE.ShaderPass(shaderBlur, 'texture');
+  effectBlurY = new THREE.ShaderPass(shaderBlur, 'texture');
+
+  var radius = 15;
+  var blurAmountX = radius / window.innerWidth;
+  var blurAmountY = radius / window.innerHeight;
+
+  hblur = new THREE.ShaderPass(THREE.HorizontalBlurShader);
+  vblur = new THREE.ShaderPass(THREE.VerticalBlurShader);
+
+  hblur.uniforms['h'].value = 1 / window.innerWidth;
+  vblur.uniforms['v'].value = 1 / window.innerHeight;
+
+  effectBlurX.uniforms['delta'].value = new THREE.Vector2(blurAmountX, 0);
+  effectBlurY.uniforms['delta'].value = new THREE.Vector2(0, blurAmountY);
+
+  effectFocus.uniforms['sampleDistance'].value = 0.99; //0.94
+  effectFocus.uniforms['waveFactor'].value = 0.003; //0.00125
+
+  var renderScene = new THREE.RenderPass(scene, camera);
+
+  composer = new THREE.EffectComposer(renderer);
+  composer.addPass(renderScene);
+  composer.addPass(hblur);
+  composer.addPass(vblur);
+  // composer.addPass(effectBlurX);
+  // composer.addPass(effectBlurY);
+  // composer.addPass(effectCopy);
+  // composer.addPass(effectFocus);
+  // composer.addPass(effectFilm);
+
+  vblur.renderToScreen = true;
+  effectBlurY.renderToScreen = true;
+  effectFocus.renderToScreen = true;
+  effectCopy.renderToScreen = true;
+  effectFilm.renderToScreen = true;
 
   window.addEventListener('resize', onWindowResize, false);
 
@@ -427,8 +473,6 @@ function render() {
   //group.rotation.y += ( targetRotation - group.rotation.y ) * 0.05;
   if (!gameStart) {
     if (rawL !== undefined && rawR !== undefined) {
-      sparksEmitters[0].start();
-      sparksEmitters[1].start();
       gameStart = true;
     }
   }
@@ -436,23 +480,38 @@ function render() {
   if (gameStart) {
     recordCountDown++;
 
-    if (largeMove) {
-      //console.log('too much!')
-      sparksEmitters.forEach(function (sparksEmitter) {
-        sparksEmitter.addCallback("created", nothing);
-        sparksEmitter.addCallback("updated", goToHell);
-      });
-    } else {
+    if (recordCountDown === 10) {
+      console.log('hello')
       sparksEmitters.forEach(function (sparksEmitter, index) {
-        sparksEmitter.addCallback("created", nothing);
+        sparksEmitter.addCallback("updated", nothing);
         sparksEmitter.addCallback("created", function (p) {
-          onParticleCreated(p, 'me', index);
+          onParticleCreated(p, 'other', index);
         });
-
+        sparksEmitter.start();
       });
+      // sparksEmitters[0].start();
+      // sparksEmitters[1].start();
     }
 
-    if (recordCountDown <= gap) {
+    // if (largeMove) {
+    //   //console.log('too much!')
+    //   sparksEmitters.forEach(function (sparksEmitter) {
+    //     sparksEmitter.addCallback("created", nothing);
+    //     sparksEmitter.addCallback("updated", goToHell);
+    //   });
+
+    // } else {
+    //   sparksEmitters.forEach(function (sparksEmitter, index) {
+    //     sparksEmitter.addCallback("update", nothing);
+    //     sparksEmitter.addCallback("created", function (p) {
+    //       //console.log(index)
+    //       onParticleCreated(p, 'me', index);
+    //     });
+
+    //   });
+    // }
+
+    if (recordCountDown < gap) {
       if (rawL !== undefined) {
         eyeL = viewport(rawL);
       }
@@ -461,7 +520,9 @@ function render() {
       }
       //console.log(rawL[1], rawR[1])
       //console.log(eyeL[1], eyeR[1])
-    } else if (!startOther) {
+    }
+
+    if (recordCountDown === gap) {
       //the user will think the detection is incorrect!!!
       //TODE: to make some hints or warning.
       sparksEmitters.forEach(function (sparksEmitter) {
@@ -469,21 +530,26 @@ function render() {
         sparksEmitter.addCallback("updated", goToHell);
       });
 
-    } else if (startOther && othersRecords.length) {
+    }
+
+    if (startOther && othersRecords.length && !otherBegin) {
 
       var eye = othersRecords.shift();
       eyeL = viewport(eye[0]);
       eyeR = viewport(eye[1]);
+
       sparksEmitters.forEach(function (sparksEmitter, index) {
-        sparksEmitter.addCallback("created", nothing);
+        sparksEmitter.addCallback("updated", nothing);
         sparksEmitter.addCallback("created", function (p) {
           onParticleCreated(p, 'other', index);
-
         });
-
       });
 
-    } else if (!othersRecords.length) {
+      otherBegin = true;
+
+    }
+
+    if (startOther && !othersRecords.length) {
       sparksEmitters.forEach(function (sparksEmitter) {
         sparksEmitter.addCallback("created", nothing);
         sparksEmitter.addCallback("updated", goToHell);
