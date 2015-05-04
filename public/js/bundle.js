@@ -59,6 +59,7 @@ var timeOnShapePath = 0;
 var composer;
 var effectBlurX, effectBlurY, hblur, vblur;
 
+var sparksEmitters = [];
 var sparksEmitter1, sparksEmitter2;
 
 var eyeL, eyeR;
@@ -82,14 +83,23 @@ var beginRecord = 500;
 var endRecord = 1000;
 var startOther = false;
 var gameStart = false;
-var RADIUS = 36;
+var RADIUS = 40;
 var MAX_NUM = 10;
 var SATURATION = 0.3;
 var ACCELERATION_X = 6;
 var RANDOMESS_X = 80;
-var LIFE = 2.4;
+var LIFE = 2.6;
+
+var newpos = require('./particle.js').newpos;
+var Pool = require('./particle.js').Pool;
+var attributes = require('./particle.js').attributes;
+//var uniforms = require('./particle.js').uniforms;
+//var shaderMaterial = require('./particle.js').shaderMaterial;
+var composer;
 
 function viewport(pos) {
+  var w = 100;
+  var h = 75;
   var x = ((w - pos[0]) / w * 2 - 1) * windowHalfX;
   var y = (-pos[1] / h * 2 + 1) * windowHalfX * 1.5;
   return [x, y];
@@ -139,41 +149,6 @@ function init() {
 
   var particles = new THREE.Geometry();
 
-  function newpos(x, y, z) {
-
-    return new THREE.Vector3(x, y, z);
-
-  }
-
-  var Pool = {
-
-    __pools: [],
-
-    // Get a new Vector
-
-    get: function () {
-
-      if (this.__pools.length > 0) {
-
-        return this.__pools.pop();
-
-      }
-
-      console.log("pool ran out!")
-      return null;
-
-    },
-
-    // Release a vector back into the pool
-
-    add: function (v) {
-
-      this.__pools.push(v);
-
-    }
-
-  };
-
   for (i = 0; i < particlesLength; i++) {
 
     particles.vertices.push(newpos(Math.random() * 200 - 100, Math.random() * 100 + 150, Math.random() * 50));
@@ -183,20 +158,7 @@ function init() {
 
   // Create pools of vectors
 
-  attributes = {
-
-    size: {
-      type: 'f',
-      value: []
-    },
-    pcolor: {
-      type: 'c',
-      value: []
-    }
-
-  };
-
-  var sprite = generateSprite();
+  var sprite = require('./particle.js').generateSprite();
   //document.body.appendChild(sprite);
 
   texture = new THREE.Texture(sprite);
@@ -211,44 +173,6 @@ function init() {
 
   };
 
-  // PARAMETERS
-
-  // Steadycounter
-  // Life
-  // Opacity
-  // Hue Speed
-  // Movement Speed
-
-  function generateSprite() {
-
-    var canvas = document.createElement('canvas');
-    canvas.width = 128;
-    canvas.height = 128;
-
-    var context = canvas.getContext('2d');
-
-    context.beginPath();
-    context.arc(64, 64, RADIUS, 0, Math.PI * 2, false);
-
-    context.lineWidth = 0.5; //0.05
-    context.stroke();
-    context.restore();
-
-    var gradient = context.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2);
-
-    gradient.addColorStop(0, 'rgba(255,255,255,1)');
-    gradient.addColorStop(0.2, 'rgba(255,255,255,1)');
-    gradient.addColorStop(0.4, 'rgba(200,200,200,1)');
-    gradient.addColorStop(1, 'rgba(0,0,0,1)');
-
-    context.fillStyle = gradient;
-
-    context.fill();
-
-    return canvas;
-
-  }
-
   var shaderMaterial = new THREE.ShaderMaterial({
 
     uniforms: uniforms,
@@ -262,6 +186,14 @@ function init() {
     transparent: true
 
   });
+
+  // PARAMETERS
+
+  // Steadycounter
+  // Life
+  // Opacity
+  // Hue Speed
+  // Movement Speed
 
   particleCloud = new THREE.PointCloud(particles, shaderMaterial);
 
@@ -432,7 +364,7 @@ function init() {
   //sparksEmitter.addAction( new SPARKS.Age() );
   sparksEmitter1.addAction(new SPARKS.Accelerate(Math.random() * -(ACCELERATION_X), 0, -20));
   sparksEmitter1.addAction(new SPARKS.Move());
-  sparksEmitter1.addAction(new SPARKS.RandomDrift(RANDOMESS_X, 10, 300));
+  sparksEmitter1.addAction(new SPARKS.RandomDrift(RANDOMESS_X, 10, 200));
 
   sparksEmitter1.addCallback("created", function (p) {
     onParticleCreatedR(p, 'me');
@@ -452,7 +384,7 @@ function init() {
   //sparksEmitter.addAction( new SPARKS.Age() );
   sparksEmitter2.addAction(new SPARKS.Accelerate(Math.random() * ACCELERATION_X, 0, -20));
   sparksEmitter2.addAction(new SPARKS.Move());
-  sparksEmitter2.addAction(new SPARKS.RandomDrift(RANDOMESS_X, 10, 300));
+  sparksEmitter2.addAction(new SPARKS.RandomDrift(RANDOMESS_X, 10, 200));
 
   sparksEmitter2.addCallback("created", function (p) {
     onParticleCreatedL(p, 'me');
@@ -506,50 +438,7 @@ function init() {
   stats.domElement.style.left = '0px';
   container.appendChild(stats.domElement);
 
-  // POST PROCESSING
-
-  var effectFocus = new THREE.ShaderPass(THREE.FocusShader);
-
-  var effectCopy = new THREE.ShaderPass(THREE.CopyShader);
-  effectFilm = new THREE.FilmPass(0.5, 0.25, 2048, false);
-
-  var shaderBlur = THREE.TriangleBlurShader;
-  effectBlurX = new THREE.ShaderPass(shaderBlur, 'texture');
-  effectBlurY = new THREE.ShaderPass(shaderBlur, 'texture');
-
-  var radius = 15;
-  var blurAmountX = radius / window.innerWidth;
-  var blurAmountY = radius / window.innerHeight;
-
-  hblur = new THREE.ShaderPass(THREE.HorizontalBlurShader);
-  vblur = new THREE.ShaderPass(THREE.VerticalBlurShader);
-
-  hblur.uniforms['h'].value = 1 / window.innerWidth;
-  vblur.uniforms['v'].value = 1 / window.innerHeight;
-
-  effectBlurX.uniforms['delta'].value = new THREE.Vector2(blurAmountX, 0);
-  effectBlurY.uniforms['delta'].value = new THREE.Vector2(0, blurAmountY);
-
-  effectFocus.uniforms['sampleDistance'].value = 0.99; //0.94
-  effectFocus.uniforms['waveFactor'].value = 0.003; //0.00125
-
-  var renderScene = new THREE.RenderPass(scene, camera);
-
-  composer = new THREE.EffectComposer(renderer);
-  composer.addPass(renderScene);
-  composer.addPass(hblur);
-  composer.addPass(vblur);
-  composer.addPass(effectBlurX);
-  composer.addPass(effectBlurY);
-  composer.addPass(effectCopy);
-  composer.addPass(effectFocus);
-  // composer.addPass(effectFilm);
-
-  vblur.renderToScreen = true;
-  effectBlurY.renderToScreen = true;
-  effectFocus.renderToScreen = true;
-  effectCopy.renderToScreen = true;
-  effectFilm.renderToScreen = true;
+  composer = require('./particle.js').effectConfig(scene, camera, renderer);
 
   // document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 
@@ -773,28 +662,170 @@ function render() {
       });
     }
 
-    // var dR = require('./track.js').dR;
-    // var dL = require('./track.js').dL;
-
-    // if( dR !== null){
-    //   sparksEmitter1.addAction( new SPARKS.Accelerate( 0, 0, 0 ) );
-    //   sparksEmitter1.addAction( new SPARKS.Accelerate( dR[0]*0.1, dR[1]*0.1, 0 ) );
-    // }
-    // if( dL !== null){
-    //   sparksEmitter2.addAction( new SPARKS.Accelerate( 0, 0, 0 ) );
-    //   sparksEmitter2.addAction( new SPARKS.Accelerate( dL[0]*0.1, dL[1]*0.1, 0 ) );
-    // }
   }
   renderer.clear();
-
-  // renderer.render( scene, camera );
   composer.render(0.1);
 
 }
 
 init();
 animate();
-},{"./track.js":"/Users/karen/Documents/my_project/gaze/public/js/track.js"}],"/Users/karen/Documents/my_project/gaze/public/js/track.js":[function(require,module,exports){
+},{"./particle.js":"/Users/karen/Documents/my_project/gaze/public/js/particle.js","./track.js":"/Users/karen/Documents/my_project/gaze/public/js/track.js"}],"/Users/karen/Documents/my_project/gaze/public/js/particle.js":[function(require,module,exports){
+var RADIUS = 40;
+
+exports.generateSprite = function () {
+
+  var canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+
+  var context = canvas.getContext('2d');
+
+  context.beginPath();
+  context.arc(64, 64, RADIUS, 0, Math.PI * 2, false);
+
+  context.lineWidth = 0.5; //0.05
+  context.stroke();
+  context.restore();
+
+  var gradient = context.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2);
+
+  gradient.addColorStop(0, 'rgba(255,255,255,1)');
+  gradient.addColorStop(0.2, 'rgba(255,255,255,1)');
+  gradient.addColorStop(0.4, 'rgba(200,200,200,1)');
+  gradient.addColorStop(1, 'rgba(0,0,0,1)');
+
+  context.fillStyle = gradient;
+
+  context.fill();
+
+  return canvas;
+
+};
+
+exports.Pool = {
+
+  __pools: [],
+
+  // Get a new Vector
+
+  get: function () {
+
+    if (this.__pools.length > 0) {
+
+      return this.__pools.pop();
+
+    }
+
+    console.log("pool ran out!")
+    return null;
+
+  },
+
+  // Release a vector back into the pool
+
+  add: function (v) {
+
+    this.__pools.push(v);
+
+  }
+
+};
+
+exports.newpos = function (x, y, z) {
+
+  return new THREE.Vector3(x, y, z);
+
+};
+
+exports.attributes = {
+
+  size: {
+    type: 'f',
+    value: []
+  },
+  pcolor: {
+    type: 'c',
+    value: []
+  }
+
+};
+
+// exports.texture = new THREE.Texture(exports.sprite);
+// exports.texture.needsUpdate = true;
+
+// exports.uniforms = {
+
+//   texture: {
+//     type: "t",
+//     value: exports.texture
+//   }
+
+// };
+
+// exports.shaderMaterial = new THREE.ShaderMaterial({
+
+//   uniforms: exports.uniforms,
+//   attributes: exports.attributes,
+
+//   vertexShader: document.getElementById('vertexshader').textContent,
+//   fragmentShader: document.getElementById('fragmentshader').textContent,
+
+//   blending: THREE.AdditiveBlending,
+//   depthWrite: false,
+//   transparent: true
+
+// });
+
+exports.effectConfig = function (scene, camera, renderer) {
+  // POST PROCESSING
+
+  var effectFocus = new THREE.ShaderPass(THREE.FocusShader);
+
+  var effectCopy = new THREE.ShaderPass(THREE.CopyShader);
+  effectFilm = new THREE.FilmPass(0.5, 0.25, 2048, false);
+
+  var shaderBlur = THREE.TriangleBlurShader;
+  effectBlurX = new THREE.ShaderPass(shaderBlur, 'texture');
+  effectBlurY = new THREE.ShaderPass(shaderBlur, 'texture');
+
+  var radius = 15;
+  var blurAmountX = radius / window.innerWidth;
+  var blurAmountY = radius / window.innerHeight;
+
+  hblur = new THREE.ShaderPass(THREE.HorizontalBlurShader);
+  vblur = new THREE.ShaderPass(THREE.VerticalBlurShader);
+
+  hblur.uniforms['h'].value = 1 / window.innerWidth;
+  vblur.uniforms['v'].value = 1 / window.innerHeight;
+
+  effectBlurX.uniforms['delta'].value = new THREE.Vector2(blurAmountX, 0);
+  effectBlurY.uniforms['delta'].value = new THREE.Vector2(0, blurAmountY);
+
+  effectFocus.uniforms['sampleDistance'].value = 0.99; //0.94
+  effectFocus.uniforms['waveFactor'].value = 0.003; //0.00125
+
+  var renderScene = new THREE.RenderPass(scene, camera);
+
+  composer = new THREE.EffectComposer(renderer);
+  composer.addPass(renderScene);
+  composer.addPass(hblur);
+  composer.addPass(vblur);
+  composer.addPass(effectBlurX);
+  composer.addPass(effectBlurY);
+  composer.addPass(effectCopy);
+  composer.addPass(effectFocus);
+  // composer.addPass(effectFilm);
+
+  vblur.renderToScreen = true;
+  effectBlurY.renderToScreen = true;
+  effectFocus.renderToScreen = true;
+  effectCopy.renderToScreen = true;
+  effectFilm.renderToScreen = true;
+
+  return composer;
+}
+},{}],"/Users/karen/Documents/my_project/gaze/public/js/track.js":[function(require,module,exports){
 var inherits = require('inherits');
 var EventEmitter = require('events').EventEmitter;
 inherits(Widget, EventEmitter);
