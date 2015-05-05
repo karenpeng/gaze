@@ -124,12 +124,12 @@ function blickDetection(pos, lastPos) {
   return false;
 }
 
-function largeMoveDetection(pos, lastPos) {
-  var dis = (pos[0] - lastPos[0]) * (pos[0] - lastPos[0]) + (pos[1] - lastPos[1]) * (pos[1] - lastPos[1]);
-  if (dis > moveTredshold) {
-    return true;
-  }
-  return false;
-}
+// function largeMoveDetection(pos, lastPos) {
+//   var dis = (pos[0] - lastPos[0]) * (pos[0] - lastPos[0]) + (pos[1] - lastPos[1]) * (pos[1] - lastPos[1]);
+//   if (dis > moveTredshold) {
+//     return true;
+//   }
+//   return false;
+// }
 
 exports.ctrack = ctrack;

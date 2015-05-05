@@ -15,21 +15,13 @@ var speed = 50;
 
 var pointLight;
 
-var targetRotation = 0;
-var targetRotationOnMouseDown = 0;
-
-var mouseX = 0;
-var mouseXOnMouseDown = 0;
-
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
 
 var delta = 1,
   clock = new THREE.Clock();
 
-var heartShape, particleCloud;
-var _rotation = 0;
-var timeOnShapePath = 0;
+var particleCloud;
 
 var composer;
 var effectBlurX, effectBlurY, hblur, vblur;
@@ -44,7 +36,7 @@ var frameCount = 0;
 
 var nothing, goToHell;
 
-var records = [];
+var history = [];
 
 var MAX_NUM = 10;
 var SATURATION = 0.3;
@@ -76,9 +68,8 @@ function init() {
       console.error(err);
     },
     success: function (data) {
-      othersRecords = data.eye;
-      console.log(othersRecords);
-      startOther = true;
+      history = data;
+      console.log('(•ω•)');
     }
   });
 
@@ -93,8 +84,8 @@ function init() {
   scene = new THREE.Scene();
 
   // CONTROLS
-  // controls = new THREE.OrbitControls(camera);
-  // controls.damping = 0.2;
+  controls = new THREE.OrbitControls(camera);
+  controls.damping = 0.2;
 
   // LIGHTS
 
@@ -299,34 +290,6 @@ function init() {
     }
   }
 
-  sparkConfig(0);
-  sparkConfig(1);
-
-  // sparksEmitter1.start();
-  blinkR.on('Rblink', function () {
-    //console.log('right blink!');
-    sparksEmitters[0].addCallback("created", nothing);
-    sparksEmitters[0].addCallback("updated", goToHell);
-    setTimeout(function () {
-      sparksEmitters[0].addCallback("updated", nothing);
-      sparksEmitters[0].addCallback("created", function (p) {
-        onParticleCreated(p, 'me', 0);
-      });
-    }, Math.random() * 120 + 80);
-  });
-
-  blinkL.on('Lblink', function () {
-    //console.log('left blink!');
-    sparksEmitters[1].addCallback("created", nothing);
-    sparksEmitters[1].addCallback("updated", goToHell);
-    setTimeout(function () {
-      sparksEmitters[1].addCallback("updated", nothing);
-      sparksEmitters[1].addCallback("created", function (p) {
-        onParticleCreated(p, 'me', 1);
-      });
-    }, Math.random() * 120 + 80);
-  });
-
   // End Particles
   //
 
@@ -422,9 +385,7 @@ function onWindowResize() {
 
 function animate() {
 
-  if (keepLooping) {
-    requestAnimationFrame(animate);
-  }
+  requestAnimationFrame(animate);
 
   frameCount++;
 
@@ -432,9 +393,38 @@ function animate() {
     render();
   }
 
-  //controls.update();
+  controls.update();
   stats.update();
 
+}
+
+function drawEyes(posL, posR, name) {
+
+  if (posR[0] === -1) {
+    sparksEmitters[0].addCallback("created", nothing);
+    sparksEmitters[0].addCallback("updated", goToHell);
+    setTimeout(function () {
+      sparksEmitters[0].addCallback("updated", nothing);
+      sparksEmitters[0].addCallback("created", function (p) {
+        onParticleCreated(p, name, 0);
+      });
+    }, Math.random() * 120 + 80);
+  } else if (posR !== undefined) {
+    eyeR = viewport(posR);
+  }
+
+  if (posL[0] === -1) {
+    sparksEmitters[1].addCallback("created", nothing);
+    sparksEmitters[1].addCallback("updated", goToHell);
+    setTimeout(function () {
+      sparksEmitters[1].addCallback("updated", nothing);
+      sparksEmitters[1].addCallback("created", function (p) {
+        onParticleCreated(p, name, 1);
+      });
+    }, Math.random() * 120 + 80);
+  } else if (posL !== undefined) {
+    eyeL = viewport(posL);
+  }
 }
 
 function render() {
@@ -450,7 +440,6 @@ function render() {
   // particleCloud.rotation.y += 0.05;
   rawL = require('./track.js').posL;
   rawR = require('./track.js').posR;
-  var largeMove = require('./track.js').largeMove;
 
   //group.rotation.y += ( targetRotation - group.rotation.y ) * 0.05;
   if (!gameStart) {
@@ -460,76 +449,6 @@ function render() {
   }
 
   if (gameStart) {
-    recordCountDown++;
-
-    if (recordCountDown === 10) {
-      console.log('hello')
-      sparksEmitters.forEach(function (sparksEmitter, index) {
-        sparksEmitter.addCallback("updated", nothing);
-        sparksEmitter.addCallback("created", function (p) {
-          onParticleCreated(p, 'other', index);
-        });
-        sparksEmitter.start();
-      });
-      // sparksEmitters[0].start();
-      // sparksEmitters[1].start();
-    }
-
-    // if (largeMove) {
-    //   //console.log('too much!')
-    //   sparksEmitters.forEach(function (sparksEmitter) {
-    //     sparksEmitter.addCallback("created", nothing);
-    //     sparksEmitter.addCallback("updated", goToHell);
-    //   });
-
-    // } else {
-    //   sparksEmitters.forEach(function (sparksEmitter, index) {
-    //     sparksEmitter.addCallback("update", nothing);
-    //     sparksEmitter.addCallback("created", function (p) {
-    //       //console.log(index)
-    //       onParticleCreated(p, 'me', index);
-    //     });
-
-    //   });
-    // }
-
-    if (recordCountDown < gap) {
-      if (rawL !== undefined) {
-        eyeL = viewport(rawL);
-      }
-      if (rawR !== undefined) {
-        eyeR = viewport(rawR);
-      }
-      //console.log(rawL[1], rawR[1])
-      //console.log(eyeL[1], eyeR[1])
-    }
-
-    if (recordCountDown === gap) {
-      //the user will think the detection is incorrect!!!
-      //TODE: to make some hints or warning.
-      sparksEmitters.forEach(function (sparksEmitter) {
-        sparksEmitter.addCallback("created", nothing);
-        sparksEmitter.addCallback("updated", goToHell);
-      });
-
-    }
-
-    if (startOther && othersRecords.length && !otherBegin) {
-
-      var eye = othersRecords.shift();
-      eyeL = viewport(eye[0]);
-      eyeR = viewport(eye[1]);
-
-      sparksEmitters.forEach(function (sparksEmitter, index) {
-        sparksEmitter.addCallback("updated", nothing);
-        sparksEmitter.addCallback("created", function (p) {
-          onParticleCreated(p, 'other', index);
-        });
-      });
-
-      otherBegin = true;
-
-    }
 
   }
   renderer.clear();
@@ -821,13 +740,13 @@ function blickDetection(pos, lastPos) {
   return false;
 }
 
-function largeMoveDetection(pos, lastPos) {
-  var dis = (pos[0] - lastPos[0]) * (pos[0] - lastPos[0]) + (pos[1] - lastPos[1]) * (pos[1] - lastPos[1]);
-  if (dis > moveTredshold) {
-    return true;
-  }
-  return false;
-}
+// function largeMoveDetection(pos, lastPos) {
+//   var dis = (pos[0] - lastPos[0]) * (pos[0] - lastPos[0]) + (pos[1] - lastPos[1]) * (pos[1] - lastPos[1]);
+//   if (dis > moveTredshold) {
+//     return true;
+//   }
+//   return false;
+// }
 
 exports.ctrack = ctrack;
 },{}]},{},["/Users/karen/Documents/my_project/gaze/public/js/index2.js"]);

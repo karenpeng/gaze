@@ -10,18 +10,13 @@ var speed = 50;
 
 var pointLight;
 
-var targetRotation = 0;
-var targetRotationOnMouseDown = 0;
-
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
 
 var delta = 1,
   clock = new THREE.Clock();
 
-var heartShape, particleCloud;
-var _rotation = 0;
-var timeOnShapePath = 0;
+var particleCloud;
 
 var composer;
 var effectBlurX, effectBlurY, hblur, vblur;
@@ -205,9 +200,6 @@ function init() {
         break;
       }
       // TODO Create a PointOnShape Action/Zone in the particle engine
-
-      timeOnShapePath += 0.00035 * delta;
-      if (timeOnShapePath > 1) timeOnShapePath -= 1;
 
       switch (index) {
       case 0:

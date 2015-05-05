@@ -1,5 +1,7 @@
 var express = require('express');
 var app = express();
+var server = require('http').Server(app);
+var io = require('socket.io')(server);
 
 var mongoose = require('mongoose');
 var config = require('./server/config.json');
@@ -76,6 +78,7 @@ app.get('/history', function (req, res) {
   var query = {};
   var selet = 'eye';
   var option = {
+    limit: 10,
     sort: {
       "date": -1
     }
@@ -95,6 +98,6 @@ app.post('/upload', function (req, res) {
   res.send('saved:)');
 });
 
-app.listen(port, function () {
+server.listen(port, function () {
   console.log('Listening on ' + port);
 });
