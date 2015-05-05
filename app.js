@@ -54,48 +54,76 @@ app.get('/previous', function (req, res) {
   });
 });
 
-app.get('/gallery', function (req, res) {
-  // var query = {};
-  // var selet = 'eye';
-  // var option = {
-  //   sort: {
-  //     "date": -1
-  //   }
-  // };
-  // Record.find(query, selet, option, function (err, data) {
-  //   if (err) {
-  //     return console.error(err);
-  //   }
-  //   //res.send(data);
-  //   //console.log(data);
-  //   //res.render('gallery.jade', data);
-  //   res.render('gallery.jade');
-  // });
-  res.render('gallery.jade');
-});
-
-app.get('/history', function (req, res) {
-  var query = {};
-  var selet = 'eye';
-  var option = {
-    limit: 10,
-    sort: {
-      "date": -1
-    }
-  };
-  Record.find(query, selet, option, function (err, data) {
-    if (err) {
-      return console.error(err);
-    }
-    res.send(data);
-  });
-})
-
 app.post('/upload', function (req, res) {
   var record = new Record();
   record.eye = req.body.eye;
   record.save();
   res.send('saved:)');
+});
+
+app.get('/gallery', function (req, res) {
+  res.render('gallery.jade');
+});
+
+function turnPage(num) {
+  var query = {};
+  var selet = 'eye';
+  var option = {
+    skip: num,
+    limit: 2,
+    sort: {
+      "date": -1
+    }
+  };
+
+  //stackoverflow??? why??????
+  return Record.findOne(query, selet, option, function (err, data) {
+    if (err) {
+      return console.error(err);
+    }
+    return data;
+  });
+}
+
+io.on('connection', function (socket) {
+  socket.emit('hello');
+
+  //TODO: get the total of records
+
+  // var total = Record.count({}, function (c) {
+  //   console.log(c);
+  // });
+  //console.log(total);
+
+  function sendEyes(num) {
+    var query = {};
+    var selet = 'eye';
+    var option = {
+      skip: num,
+      limit: 2,
+      sort: {
+        "date": -1
+      }
+    };
+    Record.find(query, selet, option, function (err, data) {
+      if (err) {
+        return console.error(err);
+      }
+      socket.emit('data', data);
+      num += 2;
+      console.log('sent ' + num + ' ' + data);
+      if (num > 8) return;
+      sendEyes(num);
+    });
+  }
+
+  socket.on('request', function () {
+
+    //setInterval(function () {
+    sendEyes(0);
+
+    //}, 4000);
+  });
 });
 
 server.listen(port, function () {

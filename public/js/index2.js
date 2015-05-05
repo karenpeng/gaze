@@ -1,6 +1,4 @@
-var track = require('./track.js');
-var blinkL = track.blinkL;
-var blinkR = track.blinkR;
+var socket = io.connect('http://' + location.host);
 
 var container, stats;
 
@@ -36,6 +34,7 @@ var frameCount = 0;
 var nothing, goToHell;
 
 var history = [];
+var eye = [];
 
 var MAX_NUM = 10;
 var SATURATION = 0.3;
@@ -52,25 +51,25 @@ var attributes = require('./particle.js').attributes;
 
 function viewport(pos) {
   var x = ((w - pos[0]) / w * 2 - 1) * windowHalfX;
-  var y = (-pos[1] / h * 2 + 1) * windowHalfX * 1.2;
+  var y = (-pos[1] / h * 2 + 1) * windowHalfX;
   return [x, y];
 }
 
 function init() {
 
-  $.ajax({
-    url: '/history',
-    method: 'GET',
-    //dataType means the data you get
-    dataType: 'json',
-    error: function (err) {
-      console.error(err);
-    },
-    success: function (data) {
-      history = data;
-      console.log('(•ω•)');
-    }
-  });
+  // $.ajax({
+  //   url: '/history',
+  //   method: 'GET',
+  //   //dataType means the data you get
+  //   dataType: 'json',
+  //   error: function (err) {
+  //     console.error(err);
+  //   },
+  //   success: function (data) {
+  //     history = data;
+  //     console.log('(•ω•)');
+  //   }
+  // });
 
   container = document.getElementById('container');
   // CAMERA
@@ -182,7 +181,7 @@ function init() {
 
   };
 
-  onParticleCreated = function (p, index) {
+  onParticleCreated = function (p, index, eyeIndex) {
     var position = p.position;
     p.target.position = position;
 
@@ -203,11 +202,8 @@ function init() {
       if (hue > 0.7) hue -= 0.7;
       // TODO Create a PointOnShape Action/Zone in the particle engine
 
-      timeOnShapePath += 0.00035 * delta;
-      if (timeOnShapePath > 1) timeOnShapePath -= 1;
-
-      emitterpos[index].x = records[index][0];
-      emitterpos[index].y = records[index][1];
+      emitterpos[index].x = eye[index][eyeIndex][0];
+      emitterpos[index].y = eye[index][eyeIndex][1];
 
     }
 
@@ -216,7 +212,7 @@ function init() {
     // pointLight.position.copy( emitterpos );
     pointLight.position.x = emitterpos.x;
     pointLight.position.y = emitterpos.y;
-    pointLight.position.z = 100;
+    pointLight.position.z = 10 * index;
 
     particles.vertices[target] = p.position;
 
@@ -256,35 +252,35 @@ function init() {
     particle.age += 1;
   };
 
-  function sparkConfig(index) {
+  function sparkConfig(index, eyeIndex) {
 
-    sparksEmitters[index] = new SPARKS.Emitter(new SPARKS.SteadyCounter(MAX_NUM));
+    sparksEmitters[index][eyeIndex] = new SPARKS.Emitter(new SPARKS.SteadyCounter(MAX_NUM));
 
-    emitterpos[index] = new THREE.Vector3(0, 0, 0);
+    emitterpos[index][eyeIndex] = new THREE.Vector3(0, 0, 0);
 
-    sparksEmitters[index].addInitializer(new SPARKS.Position(new SPARKS.PointZone(emitterpos[index])));
-    sparksEmitters[index].addInitializer(new SPARKS.Lifetime(0, LIFE));
-    sparksEmitters[index].addInitializer(new SPARKS.Target(null, setTargetParticle));
+    sparksEmitters[index][eyeIndex].addInitializer(new SPARKS.Position(new SPARKS.PointZone(emitterpos[index])));
+    sparksEmitters[index][eyeIndex].addInitializer(new SPARKS.Lifetime(0, LIFE));
+    sparksEmitters[index][eyeIndex].addInitializer(new SPARKS.Target(null, setTargetParticle));
 
-    sparksEmitters[index].addInitializer(new SPARKS.Velocity(new SPARKS.PointZone(new THREE.Vector3(0, -5, 1))));
+    sparksEmitters[index][eyeIndex].addInitializer(new SPARKS.Velocity(new SPARKS.PointZone(new THREE.Vector3(0, -5, 1))));
 
-    sparksEmitters[index].addAction(new SPARKS.Age(TWEEN.Easing.Quartic.In));
+    sparksEmitters[index][eyeIndex].addAction(new SPARKS.Age(TWEEN.Easing.Quartic.In));
     //sparksEmitter.addAction( new SPARKS.Age() );
 
-    sparksEmitters[index].addAction(new SPARKS.Move());
-    sparksEmitters[index].addAction(new SPARKS.RandomDrift(RANDOMESS_X, 5, 100));
+    sparksEmitters[index][eyeIndex].addAction(new SPARKS.Move());
+    sparksEmitters[index][eyeIndex].addAction(new SPARKS.RandomDrift(RANDOMESS_X, 5, 100));
 
-    sparksEmitters[index].addCallback("created", function (p) {
-      onParticleCreated(p, 'me', index);
+    sparksEmitters[index][eyeIndex].addCallback("created", function (p) {
+      onParticleCreated(p, index, eyeIndex);
     });
-    sparksEmitters[index].addCallback("dead", onParticleDead);
+    sparksEmitters[index][eyeIndex].addCallback("dead", onParticleDead);
 
-    switch (index) {
+    switch (eyeIndex) {
     case 0:
-      sparksEmitters[index].addAction(new SPARKS.Accelerate(Math.random() * -(ACCELERATION_X), 0, -20));
+      sparksEmitters[index][eyeIndex].addAction(new SPARKS.Accelerate(Math.random() * -(ACCELERATION_X), 0, -20));
       break;
     case 1:
-      sparksEmitters[index].addAction(new SPARKS.Accelerate(Math.random() * ACCELERATION_X, 0, -20));
+      sparksEmitters[index][eyeIndex].addAction(new SPARKS.Accelerate(Math.random() * ACCELERATION_X, 0, -20));
       break;
     }
   }
@@ -378,9 +374,16 @@ function onWindowResize() {
 
 }
 
-//
+socket.on('hello', function () {
+  console.log('hello back');
+  socket.emit('request');
+});
 
-// document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+var index = 0;
+socket.on('data', function (data) {
+  console.log(data[0], data[1]);
+  index += 2;
+});
 
 function animate() {
 
@@ -397,32 +400,32 @@ function animate() {
 
 }
 
-function drawEyes(posL, posR, name) {
+function drawEyes(posL, posR, index) {
 
   if (posR[0] === -1) {
-    sparksEmitters[0].addCallback("created", nothing);
-    sparksEmitters[0].addCallback("updated", goToHell);
+    sparksEmitters[index][0].addCallback("created", nothing);
+    sparksEmitters[index][0].addCallback("updated", goToHell);
     setTimeout(function () {
-      sparksEmitters[0].addCallback("updated", nothing);
-      sparksEmitters[0].addCallback("created", function (p) {
-        onParticleCreated(p, name, 0);
+      sparksEmitters[index][0].addCallback("updated", nothing);
+      sparksEmitters[index][0].addCallback("created", function (p) {
+        onParticleCreated(p, index, 0);
       });
     }, Math.random() * 120 + 80);
   } else if (posR !== undefined) {
-    eyeR = viewport(posR);
+    eye[index][0] = viewport(posR);
   }
 
   if (posL[0] === -1) {
-    sparksEmitters[1].addCallback("created", nothing);
-    sparksEmitters[1].addCallback("updated", goToHell);
+    sparksEmitters[index][1].addCallback("created", nothing);
+    sparksEmitters[index][1].addCallback("updated", goToHell);
     setTimeout(function () {
-      sparksEmitters[1].addCallback("updated", nothing);
-      sparksEmitters[1].addCallback("created", function (p) {
-        onParticleCreated(p, name, 1);
+      sparksEmitters[index][1].addCallback("updated", nothing);
+      sparksEmitters[index][1].addCallback("created", function (p) {
+        onParticleCreated(p, index, 1);
       });
     }, Math.random() * 120 + 80);
   } else if (posL !== undefined) {
-    eyeL = viewport(posL);
+    eye[index][1] = viewport(posL);
   }
 }
 
@@ -435,21 +438,8 @@ function render() {
   attributes.size.needsUpdate = true;
   attributes.pcolor.needsUpdate = true;
 
-  // Pretty cool effect if you enable this
-  // particleCloud.rotation.y += 0.05;
-  rawL = require('./track.js').posL;
-  rawR = require('./track.js').posR;
+  //eye[index] = viewport(history[index]);
 
-  //group.rotation.y += ( targetRotation - group.rotation.y ) * 0.05;
-  if (!gameStart) {
-    if (rawL !== undefined && rawR !== undefined) {
-      gameStart = true;
-    }
-  }
-
-  if (gameStart) {
-
-  }
   renderer.clear();
   composer.render(0.1);
 

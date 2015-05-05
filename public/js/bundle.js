@@ -47,11 +47,11 @@ var endRecord = 1000;
 var startOther = false;
 var gameStart = false;
 var RADIUS = 40;
-var MAX_NUM = 10;
+var MAX_NUM = 20;
 var SATURATION = 0.3;
 var ACCELERATION_X = 0;
 var RANDOMESS_X = 10;
-var LIFE = 3;
+var LIFE = 2;
 
 var newpos = require('./particle.js').newpos;
 var Pool = require('./particle.js').Pool;
