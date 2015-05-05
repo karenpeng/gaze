@@ -36,34 +36,20 @@ var effectBlurX, effectBlurY, hblur, vblur;
 var sparksEmitters = [];
 var emitterpos = [];
 
-var eyeL, eyeR;
-
-var rawL, rawR;
-
-var w = document.getElementById('videoel').width;
-var h = document.getElementById('videoel').height;
+var w = 100;
+var h = 75;
 
 var frameCount = 0;
-var keepLooping = true;
 
 var nothing, goToHell;
 
 var records = [];
-var othersRecords = [];
-var recordCountDown = 0;
-var progress = document.getElementById('progress');
-var gap = 400;
-var beginRecord = 500;
-var endRecord = 1000;
-var startOther = false;
-var gameStart = false;
-var RADIUS = 40;
+
 var MAX_NUM = 10;
 var SATURATION = 0.3;
 var ACCELERATION_X = 0;
 var RANDOMESS_X = 10;
 var LIFE = 3;
-var otherBegin = false;
 
 var newpos = require('./particle.js').newpos;
 var Pool = require('./particle.js').Pool;
@@ -73,20 +59,27 @@ var attributes = require('./particle.js').attributes;
 //var composer;
 
 function viewport(pos) {
-  var x = ((w - pos[0]) / w * 2 - 1) * windowHalfX * 1.2;
-  var y = (-pos[1] / h * 2 + 1) * windowHalfX * 1.5;
+  var x = ((w - pos[0]) / w * 2 - 1) * windowHalfX;
+  var y = (-pos[1] / h * 2 + 1) * windowHalfX * 1.2;
   return [x, y];
 }
 
 function init() {
 
-  // rawL = require('./track.js').posL;
-  // rawR = require('./track.js').posR;
-
-  // eyeL = viewport(rawL);
-  // eyeR = viewport(rawR);
-  eyeL = [0, 0];
-  eyeR = [0, 0];
+  $.ajax({
+    url: '/history',
+    method: 'GET',
+    //dataType means the data you get
+    dataType: 'json',
+    error: function (err) {
+      console.error(err);
+    },
+    success: function (data) {
+      othersRecords = data.eye;
+      console.log(othersRecords);
+      startOther = true;
+    }
+  });
 
   container = document.getElementById('container');
   // CAMERA
@@ -198,7 +191,7 @@ function init() {
 
   };
 
-  onParticleCreated = function (p, c, index) {
+  onParticleCreated = function (p, index) {
     var position = p.position;
     p.target.position = position;
 
@@ -209,48 +202,36 @@ function init() {
       // console.log(target,particles.vertices[target]);
       // values_size[target]
       // values_color[target]
-      switch (c) {
-      case 'me':
-        hue += 0.00008 * delta;
-        if (hue < 0.4) hue += 0.4;
-        if (hue > 0.7) hue -= 0.7;
-        break;
-      case 'other':
-        hue += 0.0003 * delta;
-        if (hue < 0.6) hue += 0.6;
-        if (hue > 0.7) hue -= 0.7;
-        break;
-      }
+      // hue += 0.00008 * delta;
+      // if (hue < 0.4) hue += 0.4;
+      // if (hue > 0.7) hue -= 0.7;
+      // break;
+
+      hue += 0.0003 * delta;
+      if (hue < 0.6) hue += 0.6;
+      if (hue > 0.7) hue -= 0.7;
       // TODO Create a PointOnShape Action/Zone in the particle engine
 
       timeOnShapePath += 0.00035 * delta;
       if (timeOnShapePath > 1) timeOnShapePath -= 1;
 
-      switch (index) {
-      case 0:
-        emitterpos[index].x = eyeR[0];
-        emitterpos[index].y = eyeR[1];
-        break;
-      case 1:
-        emitterpos[index].x = eyeL[0];
-        emitterpos[index].y = eyeL[1];
-        break;
-      }
+      emitterpos[index].x = records[index][0];
+      emitterpos[index].y = records[index][1];
 
-      //console.log(eyeL[1], eyeR[1])
+    }
 
-      // pointLight.position.copy( emitterpos );
-      pointLight.position.x = emitterpos.x;
-      pointLight.position.y = emitterpos.y;
-      pointLight.position.z = 100;
+    //console.log(eyeL[1], eyeR[1])
 
-      particles.vertices[target] = p.position;
+    // pointLight.position.copy( emitterpos );
+    pointLight.position.x = emitterpos.x;
+    pointLight.position.y = emitterpos.y;
+    pointLight.position.z = 100;
 
-      values_color[target].setHSL(hue, SATURATION, 0.1);
+    particles.vertices[target] = p.position;
 
-      pointLight.color.setHSL(hue, SATURATION, 0.9);
+    values_color[target].setHSL(hue, SATURATION, 0.1);
 
-    };
+    pointLight.color.setHSL(hue, SATURATION, 0.9);
   }
 
   var onParticleDead = function (particle) {
@@ -547,64 +528,6 @@ function render() {
 
       otherBegin = true;
 
-    }
-
-    if (startOther && !othersRecords.length) {
-      sparksEmitters.forEach(function (sparksEmitter) {
-        sparksEmitter.addCallback("created", nothing);
-        sparksEmitter.addCallback("updated", goToHell);
-      });
-      require('./track.js').ctrack.stop();
-      setTimeout(function () {
-        keepLooping = false
-      }, 6000);
-    }
-
-    if (recordCountDown > beginRecord && recordCountDown <= endRecord) {
-      records.push([rawL, rawR]);
-      var w = window.innerWidth * (recordCountDown - beginRecord) / (endRecord - beginRecord);
-      document.getElementById('progress').setAttribute('style', 'width:' + w + 'px;');
-    }
-
-    if (recordCountDown === beginRecord) {
-
-      $.ajax({
-        url: '/previous',
-        method: 'GET',
-        //dataType means the data you get
-        dataType: 'json',
-        error: function (err) {
-          console.error(err);
-        },
-        success: function (data) {
-          othersRecords = data.eye;
-          console.log(othersRecords);
-          startOther = true;
-        }
-      });
-    }
-
-    if (recordCountDown === endRecord) {
-      console.log(records.length);
-      $.ajax({
-        url: '/upload',
-        method: 'POST',
-        //contentType means the data you sent
-        contentType: 'application/json; charset=utf-8',
-        //stringify is important
-        //see:
-        //http://encosia.com/asmx-scriptservice-mistake-invalid-json-primitive/
-        data: JSON.stringify({
-          eye: records
-        }),
-        //dataType: 'json',
-        error: function (err) {
-          console.error(err);
-        },
-        success: function () {
-          console.log('(•ω•)');
-        }
-      });
     }
 
   }

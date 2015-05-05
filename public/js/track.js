@@ -1,14 +1,3 @@
-var inherits = require('inherits');
-var EventEmitter = require('events').EventEmitter;
-inherits(Widget, EventEmitter);
-
-function Widget() {
-  if (!(this instanceof Widget)) return new Widget();
-}
-Widget.prototype.yell = function (tag, data) {
-  this.emit((tag + 'blink'), data);
-};
-
 var vid = document.getElementById('videoel');
 
 var ctrack = new clm.tracker({
@@ -24,8 +13,7 @@ var preL = false;
 var preR = false;
 var curL = false;
 var curR = false;
-var blinkL = new Widget();
-var blinkR = new Widget();
+
 exports.largeMove = false;
 var moveTredshold = (videoel.width * 0.16) * (videoel.width * 0.16);
 
@@ -89,79 +77,42 @@ function drawLoop() {
 
   frameCount++;
 
-  //overlayCC.clearRect(0, 0, overlay.width, overlay.height);
-
-  //overlayCC.save();
-  //overlayCC.translate(overlay.width, 0);
-  //overlayCC.scale(-1, 1);
-  //overlayCC.drawImage(vid, 0, 0, overlay.width, overlay.height);
-  //overlayCC.restore();
-  //psrElement.innerHTML = "score :" + ctrack.getScore().toFixed(4);
-  //console.log(overlayCC);
-
   if (ctrack.getCurrentPosition()) {
     positions = ctrack.getCurrentPosition();
 
+    historyL.push(positions[27]);
+    historyR.push(positions[32]);
+
     if (frameCount < 30) {
-      historyL.push(positions[27]);
-      historyR.push(positions[32]);
+      exports.posL = [Math.round(positions[27][0]), Math.round(positions[27][1])];
+      exports.posR = [Math.round(positions[32][0]), Math.round(positions[32][1])];
     } else {
       lastPosL = historyL.shift();
       lastPosR = historyR.shift();
-      historyL.push(positions[27]);
-      historyR.push(positions[32]);
 
-      //if(frameCount % 2 === 0){
       curL = blickDetection(positions[27], lastPosL);
       if (preL !== curL) {
         if (curL) {
-          blinkL.yell('L');
+          exports.posL = [-1, -1];
         }
         preL = curL;
+      } else {
+        exports.posL = [Math.round(positions[27][0]), Math.round(positions[27][1])];
       }
-      curR = blickDetection(positions[32], lastPosR)
+
+      curR = blickDetection(positions[32], lastPosR);
       if (preR !== curR) {
         if (curR) {
-          blinkR.yell('R');
+          exports.posR = [-1, -1];
         }
 
         preR = curR;
+      } else {
+        exports.posR = [Math.round(positions[32][0]), Math.round(positions[32][1])];
       }
 
-      //exports.dL = [lastPosL[0] - positions[27][0], lastPosL[1] - positions[27][1]];
-      //exports.dR = [lastPosR[0] - positions[32][0], lastPosR[1] - positions[32][1]];
-      exports.largeMove = (largeMoveDetection(positions[27], lastPosL) || largeMoveDetection(positions[32], lastPosR));
+      //exports.largeMove = (largeMoveDetection(positions[27], lastPosL) || largeMoveDetection(positions[32], lastPosR));
     }
-    //}
-
-    // overlayCC.strokeStyle = 'red';
-    // overlayCC.beginPath();
-    // var a = lastPosL;
-    // overlayCC.moveTo(a[0], a[1]);
-    // var b = positions[27];
-    // overlayCC.lineTo(b[0], b[1]);
-    // overlayCC.stroke();
-
-    // overlayCC.beginPath();
-    // var a1 = lastPosR;
-    // overlayCC.moveTo(a1[0], a1[1]);
-    // var b1 = positions[32];
-    // overlayCC.lineTo(b1[0], b1[1]);
-    // overlayCC.stroke();
-
-    // // ctrack.draw(overlay);
-    // overlayCC.fillStyle = 'white';
-    // overlayCC.fillRect(b[0], b[1], 3, 3);
-    // overlayCC.fillRect(b1[0], b1[1], 3, 3);
-
-    // //overlayCC.restore();
-    // overlayCC.fillStyle = 'red';
-    // overlayCC.fillRect(0, 0, xMax, yMax);
-    // overlayCC.fillRect(videoel.width - xMax, videoel.height - yMin, xMax, yMin);
-
-    exports.posL = [Math.round(positions[27][0]), Math.round(positions[27][1])];
-    exports.posR = [Math.round(positions[32][0]), Math.round(positions[32][1])];
-    //console.log(exports.posL[1], exports.posR[1])
   }
 }
 
@@ -183,6 +134,4 @@ function largeMoveDetection(pos, lastPos) {
   return false;
 }
 
-exports.blinkR = blinkR;
-exports.blinkL = blinkL;
 exports.ctrack = ctrack;

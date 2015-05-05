@@ -1,12 +1,8 @@
 var track = require('./track.js');
-var blinkL = track.blinkL;
-var blinkR = track.blinkR;
 
 var container, stats;
 
 var camera, scene, renderer;
-
-var controls;
 
 var group, plane;
 
@@ -16,9 +12,6 @@ var pointLight;
 
 var targetRotation = 0;
 var targetRotationOnMouseDown = 0;
-
-var mouseX = 0;
-var mouseXOnMouseDown = 0;
 
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
@@ -63,7 +56,6 @@ var SATURATION = 0.3;
 var ACCELERATION_X = 0;
 var RANDOMESS_X = 10;
 var LIFE = 3;
-var otherBegin = false;
 
 var newpos = require('./particle.js').newpos;
 var Pool = require('./particle.js').Pool;
@@ -80,11 +72,6 @@ function viewport(pos) {
 
 function init() {
 
-  // rawL = require('./track.js').posL;
-  // rawR = require('./track.js').posR;
-
-  // eyeL = viewport(rawL);
-  // eyeR = viewport(rawR);
   eyeL = [0, 0];
   eyeR = [0, 0];
 
@@ -97,10 +84,6 @@ function init() {
   // SCENE
 
   scene = new THREE.Scene();
-
-  // CONTROLS
-  // controls = new THREE.OrbitControls(camera);
-  // controls.damping = 0.2;
 
   // LIGHTS
 
@@ -320,31 +303,6 @@ function init() {
   sparkConfig(0);
   sparkConfig(1);
 
-  // sparksEmitter1.start();
-  blinkR.on('Rblink', function () {
-    //console.log('right blink!');
-    sparksEmitters[0].addCallback("created", nothing);
-    sparksEmitters[0].addCallback("updated", goToHell);
-    setTimeout(function () {
-      sparksEmitters[0].addCallback("updated", nothing);
-      sparksEmitters[0].addCallback("created", function (p) {
-        onParticleCreated(p, 'me', 0);
-      });
-    }, Math.random() * 120 + 80);
-  });
-
-  blinkL.on('Lblink', function () {
-    //console.log('left blink!');
-    sparksEmitters[1].addCallback("created", nothing);
-    sparksEmitters[1].addCallback("updated", goToHell);
-    setTimeout(function () {
-      sparksEmitters[1].addCallback("updated", nothing);
-      sparksEmitters[1].addCallback("created", function (p) {
-        onParticleCreated(p, 'me', 1);
-      });
-    }, Math.random() * 120 + 80);
-  });
-
   // End Particles
   //
 
@@ -455,6 +413,36 @@ function animate() {
 
 }
 
+function drawEyes(posL, posR, name) {
+
+  if (posR[0] === -1) {
+    sparksEmitters[0].addCallback("created", nothing);
+    sparksEmitters[0].addCallback("updated", goToHell);
+    setTimeout(function () {
+      sparksEmitters[0].addCallback("updated", nothing);
+      sparksEmitters[0].addCallback("created", function (p) {
+        onParticleCreated(p, name, 0);
+      });
+    }, Math.random() * 120 + 80);
+  } else if (posR !== undefined) {
+    eyeR = viewport(posR);
+  }
+
+  if (posL[0] === -1) {
+    console.log('blnk');
+    sparksEmitters[1].addCallback("created", nothing);
+    sparksEmitters[1].addCallback("updated", goToHell);
+    setTimeout(function () {
+      sparksEmitters[1].addCallback("updated", nothing);
+      sparksEmitters[1].addCallback("created", function (p) {
+        onParticleCreated(p, name, 1);
+      });
+    }, Math.random() * 120 + 80);
+  } else if (posL !== undefined) {
+    eyeL = viewport(posL);
+  }
+}
+
 function render() {
 
   delta = speed * clock.getDelta();
@@ -468,9 +456,7 @@ function render() {
   // particleCloud.rotation.y += 0.05;
   rawL = require('./track.js').posL;
   rawR = require('./track.js').posR;
-  var largeMove = require('./track.js').largeMove;
 
-  //group.rotation.y += ( targetRotation - group.rotation.y ) * 0.05;
   if (!gameStart) {
     if (rawL !== undefined && rawR !== undefined) {
       gameStart = true;
@@ -481,43 +467,14 @@ function render() {
     recordCountDown++;
 
     if (recordCountDown === 10) {
-      console.log('hello')
       sparksEmitters.forEach(function (sparksEmitter, index) {
-        sparksEmitter.addCallback("updated", nothing);
-        sparksEmitter.addCallback("created", function (p) {
-          onParticleCreated(p, 'other', index);
-        });
         sparksEmitter.start();
       });
-      // sparksEmitters[0].start();
-      // sparksEmitters[1].start();
     }
 
-    // if (largeMove) {
-    //   //console.log('too much!')
-    //   sparksEmitters.forEach(function (sparksEmitter) {
-    //     sparksEmitter.addCallback("created", nothing);
-    //     sparksEmitter.addCallback("updated", goToHell);
-    //   });
-
-    // } else {
-    //   sparksEmitters.forEach(function (sparksEmitter, index) {
-    //     sparksEmitter.addCallback("update", nothing);
-    //     sparksEmitter.addCallback("created", function (p) {
-    //       //console.log(index)
-    //       onParticleCreated(p, 'me', index);
-    //     });
-
-    //   });
-    // }
-
     if (recordCountDown < gap) {
-      if (rawL !== undefined) {
-        eyeL = viewport(rawL);
-      }
-      if (rawR !== undefined) {
-        eyeR = viewport(rawR);
-      }
+
+      drawEyes(rawL, rawR, 'me');
       //console.log(rawL[1], rawR[1])
       //console.log(eyeL[1], eyeR[1])
     }
@@ -532,11 +489,10 @@ function render() {
 
     }
 
-    if (startOther && othersRecords.length && !otherBegin) {
+    if (startOther && othersRecords.length) {
 
       var eye = othersRecords.shift();
-      eyeL = viewport(eye[0]);
-      eyeR = viewport(eye[1]);
+      drawEyes(eye[0], eye[1], 'other');
 
       sparksEmitters.forEach(function (sparksEmitter, index) {
         sparksEmitter.addCallback("updated", nothing);
@@ -544,8 +500,6 @@ function render() {
           onParticleCreated(p, 'other', index);
         });
       });
-
-      otherBegin = true;
 
     }
 
@@ -578,7 +532,7 @@ function render() {
         },
         success: function (data) {
           othersRecords = data.eye;
-          console.log(othersRecords);
+          //console.log(othersRecords);
           startOther = true;
         }
       });
