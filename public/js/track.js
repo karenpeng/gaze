@@ -105,13 +105,11 @@ function drawLoop() {
         if (curR) {
           exports.posR = [-1, -1];
         }
-
         preR = curR;
       } else {
         exports.posR = [Math.round(positions[32][0]), Math.round(positions[32][1])];
       }
 
-      //exports.largeMove = (largeMoveDetection(positions[27], lastPosL) || largeMoveDetection(positions[32], lastPosR));
     }
   }
 }

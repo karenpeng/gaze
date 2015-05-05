@@ -429,7 +429,6 @@ function drawEyes(posL, posR, name) {
   }
 
   if (posL[0] === -1) {
-    console.log('blnk');
     sparksEmitters[1].addCallback("created", nothing);
     sparksEmitters[1].addCallback("updated", goToHell);
     setTimeout(function () {
@@ -493,13 +492,6 @@ function render() {
 
       var eye = othersRecords.shift();
       drawEyes(eye[0], eye[1], 'other');
-
-      sparksEmitters.forEach(function (sparksEmitter, index) {
-        sparksEmitter.addCallback("updated", nothing);
-        sparksEmitter.addCallback("created", function (p) {
-          onParticleCreated(p, 'other', index);
-        });
-      });
 
     }
 
