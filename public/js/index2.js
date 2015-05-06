@@ -4,13 +4,17 @@ var container, stats;
 
 var camera, scene, renderer;
 
-var controls;
-
 var group, plane;
 
 var speed = 50;
 
 var pointLight;
+
+var targetRotation = 0;
+var targetRotationOnMouseDown = 0;
+
+var mouseX = 0;
+var mouseXOnMouseDown = 0;
 
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
@@ -45,48 +49,33 @@ var LIFE = 3;
 var newpos = require('./particle.js').newpos;
 var Pool = require('./particle.js').Pool;
 var attributes = require('./particle.js').attributes;
-//var uniforms = require('./particle.js').uniforms;
-//var shaderMaterial = require('./particle.js').shaderMaterial;
-//var composer;
 
-function viewport(pos) {
-  var x = ((w - pos[0]) / w * 2 - 1) * windowHalfX;
-  var y = (-pos[1] / h * 2 + 1) * windowHalfX;
-  return [x, y];
+var setTargetParticle;
+var onParticleDead;
+
+function viewportPair(pos) {
+  var x1 = ((w - pos[0][0]) / w * 2 - 1) * windowHalfX;
+  var y1 = (-pos[0][1] / h * 2 + 1) * windowHalfX * 1.2;
+  var x2 = ((w - pos[1][0]) / w * 2 - 1) * windowHalfX;
+  var y2 = (-pos[1][1] / h * 2 + 1) * windowHalfX * 1.2;
+  return [
+    [x1, y1],
+    [x2, y2]
+  ];
 }
 
 function init() {
-
-  // $.ajax({
-  //   url: '/history',
-  //   method: 'GET',
-  //   //dataType means the data you get
-  //   dataType: 'json',
-  //   error: function (err) {
-  //     console.error(err);
-  //   },
-  //   success: function (data) {
-  //     history = data;
-  //     console.log('(•ω•)');
-  //   }
-  // });
 
   container = document.getElementById('container');
   // CAMERA
 
   camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 2000);
-  camera.position.set(0, 150, 400);
+  camera.position.set(0, 100, 400);
 
   // SCENE
-
   scene = new THREE.Scene();
 
-  // CONTROLS
-  controls = new THREE.OrbitControls(camera);
-  controls.damping = 0.2;
-
   // LIGHTS
-
   var directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
   directionalLight.position.set(0, -1, 1);
   directionalLight.position.normalize();
@@ -100,7 +89,6 @@ function init() {
   scene.add(group);
 
   // Create particle objects for Three.js
-
   var particlesLength = 10000;
 
   var particles = new THREE.Geometry();
@@ -115,7 +103,6 @@ function init() {
   // Create pools of vectors
 
   var sprite = require('./particle.js').generateSprite();
-  //document.body.appendChild(sprite);
 
   texture = new THREE.Texture(sprite);
   texture.needsUpdate = true;
@@ -172,7 +159,7 @@ function init() {
 
   var hue = 0;
 
-  var setTargetParticle = function () {
+  setTargetParticle = function () {
 
     var target = Pool.get();
     values_size[target] = Math.random() * 200 + 100;
@@ -201,18 +188,20 @@ function init() {
       if (hue < 0.6) hue += 0.6;
       if (hue > 0.7) hue -= 0.7;
       // TODO Create a PointOnShape Action/Zone in the particle engine
-
-      emitterpos[index].x = eye[index][eyeIndex][0];
-      emitterpos[index].y = eye[index][eyeIndex][1];
+      //eyeIndex means left / right eye
+      //console.log(index, eyeIndex);
+      emitterpos[index][eyeIndex].x = eye[index][eyeIndex][0];
+      emitterpos[index][eyeIndex].y = eye[index][eyeIndex][1];
+      //console.log(emitterpos[index][eyeIndex].x)
 
     }
 
     //console.log(eyeL[1], eyeR[1])
 
     // pointLight.position.copy( emitterpos );
-    pointLight.position.x = emitterpos.x;
-    pointLight.position.y = emitterpos.y;
-    pointLight.position.z = 10 * index;
+    pointLight.position.x = emitterpos[index][eyeIndex].x;
+    pointLight.position.y = emitterpos[index][eyeIndex].y;
+    pointLight.position.z = -100 * index;
 
     particles.vertices[target] = p.position;
 
@@ -221,7 +210,7 @@ function init() {
     pointLight.color.setHSL(hue, SATURATION, 0.9);
   }
 
-  var onParticleDead = function (particle) {
+  onParticleDead = function (particle) {
 
     var target = particle.target;
 
@@ -251,39 +240,6 @@ function init() {
   goToHell = function (particle) {
     particle.age += 1;
   };
-
-  function sparkConfig(index, eyeIndex) {
-
-    sparksEmitters[index][eyeIndex] = new SPARKS.Emitter(new SPARKS.SteadyCounter(MAX_NUM));
-
-    emitterpos[index][eyeIndex] = new THREE.Vector3(0, 0, 0);
-
-    sparksEmitters[index][eyeIndex].addInitializer(new SPARKS.Position(new SPARKS.PointZone(emitterpos[index])));
-    sparksEmitters[index][eyeIndex].addInitializer(new SPARKS.Lifetime(0, LIFE));
-    sparksEmitters[index][eyeIndex].addInitializer(new SPARKS.Target(null, setTargetParticle));
-
-    sparksEmitters[index][eyeIndex].addInitializer(new SPARKS.Velocity(new SPARKS.PointZone(new THREE.Vector3(0, -5, 1))));
-
-    sparksEmitters[index][eyeIndex].addAction(new SPARKS.Age(TWEEN.Easing.Quartic.In));
-    //sparksEmitter.addAction( new SPARKS.Age() );
-
-    sparksEmitters[index][eyeIndex].addAction(new SPARKS.Move());
-    sparksEmitters[index][eyeIndex].addAction(new SPARKS.RandomDrift(RANDOMESS_X, 5, 100));
-
-    sparksEmitters[index][eyeIndex].addCallback("created", function (p) {
-      onParticleCreated(p, index, eyeIndex);
-    });
-    sparksEmitters[index][eyeIndex].addCallback("dead", onParticleDead);
-
-    switch (eyeIndex) {
-    case 0:
-      sparksEmitters[index][eyeIndex].addAction(new SPARKS.Accelerate(Math.random() * -(ACCELERATION_X), 0, -20));
-      break;
-    case 1:
-      sparksEmitters[index][eyeIndex].addAction(new SPARKS.Accelerate(Math.random() * ACCELERATION_X, 0, -20));
-      break;
-    }
-  }
 
   // End Particles
   //
@@ -344,7 +300,11 @@ function init() {
   effectCopy.renderToScreen = true;
   effectFilm.renderToScreen = true;
 
+  var test = new THREE.Mesh(new THREE.SphereGeometry(2, 2, 2), new THREE.MeshNormalMaterial);
+  scene.add(test);
+
   window.addEventListener('resize', onWindowResize, false);
+  document.addEventListener('mousemove', onDocumentMouseMove, false);
 
 }
 
@@ -374,17 +334,6 @@ function onWindowResize() {
 
 }
 
-socket.on('hello', function () {
-  console.log('hello back');
-  socket.emit('request');
-});
-
-var index = 0;
-socket.on('data', function (data) {
-  console.log(data[0], data[1]);
-  index += 2;
-});
-
 function animate() {
 
   requestAnimationFrame(animate);
@@ -395,9 +344,65 @@ function animate() {
     render();
   }
 
-  controls.update();
+  //controls.update();
   stats.update();
 
+}
+
+function addEyes(index, eyeIndex) {
+  console.log(index, eyeIndex);
+
+  // try {
+  //   var a = sparksEmitters[index];
+  // } catch (e) {
+  //   sparksEmitters[index] = [];
+  //   console.log(sparksEmitters[index])
+  // }
+  if (sparksEmitters[index] === undefined) {
+    sparksEmitters[index] = [];
+  }
+
+  sparksEmitters[index][eyeIndex] = new SPARKS.Emitter(new SPARKS.SteadyCounter(MAX_NUM));
+
+  // try {
+  //   var a = emitterpos[index]
+  // } catch (e) {
+  //   emitterpos[index] = [];
+  // }
+  if (emitterpos[index] === undefined) {
+    emitterpos[index] = [];
+  }
+  emitterpos[index][eyeIndex] = new THREE.Vector3(0, 0, 0);
+  //console.log(index, eyeIndex);
+  //console.log(sparksEmitters[index])
+  sparksEmitters[index][eyeIndex].addInitializer(new SPARKS.Position(new SPARKS.PointZone(emitterpos[index][eyeIndex])));
+  sparksEmitters[index][eyeIndex].addInitializer(new SPARKS.Lifetime(0, LIFE));
+  sparksEmitters[index][eyeIndex].addInitializer(new SPARKS.Target(null, setTargetParticle));
+
+  sparksEmitters[index][eyeIndex].addInitializer(new SPARKS.Velocity(new SPARKS.PointZone(new THREE.Vector3(0, -5, 1))));
+
+  sparksEmitters[index][eyeIndex].addAction(new SPARKS.Age(TWEEN.Easing.Quartic.In));
+
+  sparksEmitters[index][eyeIndex].addAction(new SPARKS.Move());
+  sparksEmitters[index][eyeIndex].addAction(new SPARKS.RandomDrift(RANDOMESS_X, 5, 10));
+
+  sparksEmitters[index][eyeIndex].addCallback("created", function (p) {
+    onParticleCreated(p, index, eyeIndex);
+  });
+  sparksEmitters[index][eyeIndex].addCallback("dead", onParticleDead);
+
+  switch (eyeIndex) {
+  case 0:
+    //console.log('left')
+    sparksEmitters[index][eyeIndex].addAction(new SPARKS.Accelerate(Math.random() * -(ACCELERATION_X), 0, -10));
+    break;
+  case 1:
+    //console.log('right')
+    sparksEmitters[index][eyeIndex].addAction(new SPARKS.Accelerate(Math.random() * ACCELERATION_X, 0, -10));
+    break;
+  }
+
+  sparksEmitters[index][eyeIndex].start();
 }
 
 function drawEyes(posL, posR, index) {
@@ -411,8 +416,6 @@ function drawEyes(posL, posR, index) {
         onParticleCreated(p, index, 0);
       });
     }, Math.random() * 120 + 80);
-  } else if (posR !== undefined) {
-    eye[index][0] = viewport(posR);
   }
 
   if (posL[0] === -1) {
@@ -424,8 +427,6 @@ function drawEyes(posL, posR, index) {
         onParticleCreated(p, index, 1);
       });
     }, Math.random() * 120 + 80);
-  } else if (posL !== undefined) {
-    eye[index][1] = viewport(posL);
   }
 }
 
@@ -438,12 +439,84 @@ function render() {
   attributes.size.needsUpdate = true;
   attributes.pcolor.needsUpdate = true;
 
-  //eye[index] = viewport(history[index]);
+  if (history.length) {
+    //console.log(history)
+    history.forEach(function (h, index) {
+      if (h.length) {
+        var raw = h.shift();
+        eye[index] = viewportPair(raw);
+        //console.log(eye[index])
+        //drawEyes(eye[index][0], eye[index][1], index);
+      } else {
+        sparksEmitters[index][0].addCallback("created", nothing);
+        sparksEmitters[index][0].addCallback("updated", goToHell);
+        sparksEmitters[index][1].addCallback("created", nothing);
+        sparksEmitters[index][1].addCallback("updated", goToHell);
+      }
+    });
+  }
 
+  group.rotation.y += (targetRotation - group.rotation.y) * 0.05;
   renderer.clear();
   composer.render(0.1);
 
 }
 
+function deQueue(que) {
+  return que.shift();
+}
+
+function onDocumentMouseMove(event) {
+
+  mouseX = event.clientX - windowHalfX;
+
+  targetRotation = targetRotationOnMouseDown + (mouseX - mouseXOnMouseDown) * 0.02;
+
+}
+
+window.onkeydown = function (e) {
+  //w or up arrow
+  if (e.which === 87 || e.which === 38) {
+    e.preventDefault();
+    camera.position.z -= 10;
+    // console.log(camera.position.z);
+  }
+  //s or down arrow
+  if (e.which === 83 || e.which === 40) {
+    e.preventDefault();
+    camera.position.z += 10;
+    // console.log(camera.position.z);
+  }
+  //a or left
+  if (e.which === 65 || e.which === 37) {
+    e.preventDefault();
+    camera.position.x
+  }
+  //d or right
+  if (e.which === 68 || e.which === 39) {
+
+  }
+}
+
 init();
 animate();
+
+socket.on('hello', function () {
+  console.log('hello back');
+  socket.emit('request');
+});
+
+socket.on('data', function (data) {
+  if (data[0]) {
+    history.push(data[0].eye);
+    eye[history.length - 1] = viewportPair(deQueue(history[0]));
+    addEyes(history.length - 1, 0);
+    addEyes(history.length - 1, 1);
+  }
+  if (data[1]) {
+    history.push(data[1].eye);
+    addEyes(history.length - 1, 0);
+    addEyes(history.length - 1, 1);
+  }
+  //console.log(history);
+});

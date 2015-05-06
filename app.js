@@ -113,16 +113,12 @@ io.on('connection', function (socket) {
       num += 2;
       console.log('sent ' + num + ' ' + data);
       if (num > 8) return;
-      sendEyes(num);
+      //sendEyes(num);
     });
   }
 
   socket.on('request', function () {
-
-    //setInterval(function () {
     sendEyes(0);
-
-    //}, 4000);
   });
 });
 
