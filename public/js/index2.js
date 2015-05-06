@@ -39,6 +39,7 @@ var nothing, goToHell;
 
 var history = [];
 var eye = [];
+var planes = [];
 
 var MAX_NUM = 10;
 var SATURATION = 0.3;
@@ -54,10 +55,10 @@ var setTargetParticle;
 var onParticleDead;
 
 function viewportPair(pos) {
-  var x1 = ((w - pos[0][0]) / w * 2 - 1) * windowHalfX;
-  var y1 = (-pos[0][1] / h * 2 + 1) * windowHalfX * 1.2;
-  var x2 = ((w - pos[1][0]) / w * 2 - 1) * windowHalfX;
-  var y2 = (-pos[1][1] / h * 2 + 1) * windowHalfX * 1.2;
+  var x1 = ((w - pos[0][0]) / w * 2 - 1) * windowHalfX * 1.2;
+  var y1 = (-pos[0][1] / h * 2 + 1) * windowHalfX * 1.5;
+  var x2 = ((w - pos[1][0]) / w * 2 - 1) * windowHalfX * 1.2;
+  var y2 = (-pos[1][1] / h * 2 + 1) * windowHalfX * 1.5;
   return [
     [x1, y1],
     [x2, y2]
@@ -184,7 +185,7 @@ function init() {
       // if (hue > 0.7) hue -= 0.7;
       // break;
 
-      hue += 0.0003 * delta;
+      hue += index * 0.01 + delta * 0.0003;
       if (hue < 0.6) hue += 0.6;
       if (hue > 0.7) hue -= 0.7;
       // TODO Create a PointOnShape Action/Zone in the particle engine
@@ -192,6 +193,7 @@ function init() {
       //console.log(index, eyeIndex);
       emitterpos[index][eyeIndex].x = eye[index][eyeIndex][0];
       emitterpos[index][eyeIndex].y = eye[index][eyeIndex][1];
+      emitterpos[index][eyeIndex].z = -200 * index;
       //console.log(emitterpos[index][eyeIndex].x)
 
     }
@@ -201,7 +203,7 @@ function init() {
     // pointLight.position.copy( emitterpos );
     pointLight.position.x = emitterpos[index][eyeIndex].x;
     pointLight.position.y = emitterpos[index][eyeIndex].y;
-    pointLight.position.z = -100 * index;
+    pointLight.position.z = -200 * index;
 
     particles.vertices[target] = p.position;
 
@@ -340,7 +342,7 @@ function animate() {
 
   frameCount++;
 
-  if (frameCount % 2 === 0) {
+  if (frameCount % 3 === 0) {
     render();
   }
 
@@ -350,31 +352,18 @@ function animate() {
 }
 
 function addEyes(index, eyeIndex) {
-  console.log(index, eyeIndex);
 
-  // try {
-  //   var a = sparksEmitters[index];
-  // } catch (e) {
-  //   sparksEmitters[index] = [];
-  //   console.log(sparksEmitters[index])
-  // }
   if (sparksEmitters[index] === undefined) {
     sparksEmitters[index] = [];
   }
 
   sparksEmitters[index][eyeIndex] = new SPARKS.Emitter(new SPARKS.SteadyCounter(MAX_NUM));
 
-  // try {
-  //   var a = emitterpos[index]
-  // } catch (e) {
-  //   emitterpos[index] = [];
-  // }
   if (emitterpos[index] === undefined) {
     emitterpos[index] = [];
   }
   emitterpos[index][eyeIndex] = new THREE.Vector3(0, 0, 0);
-  //console.log(index, eyeIndex);
-  //console.log(sparksEmitters[index])
+
   sparksEmitters[index][eyeIndex].addInitializer(new SPARKS.Position(new SPARKS.PointZone(emitterpos[index][eyeIndex])));
   sparksEmitters[index][eyeIndex].addInitializer(new SPARKS.Lifetime(0, LIFE));
   sparksEmitters[index][eyeIndex].addInitializer(new SPARKS.Target(null, setTargetParticle));
@@ -394,11 +383,11 @@ function addEyes(index, eyeIndex) {
   switch (eyeIndex) {
   case 0:
     //console.log('left')
-    sparksEmitters[index][eyeIndex].addAction(new SPARKS.Accelerate(Math.random() * -(ACCELERATION_X), 0, -10));
+    sparksEmitters[index][eyeIndex].addAction(new SPARKS.Accelerate(Math.random() * -(ACCELERATION_X), 0, -20));
     break;
   case 1:
     //console.log('right')
-    sparksEmitters[index][eyeIndex].addAction(new SPARKS.Accelerate(Math.random() * ACCELERATION_X, 0, -10));
+    sparksEmitters[index][eyeIndex].addAction(new SPARKS.Accelerate(Math.random() * ACCELERATION_X, 0, -20));
     break;
   }
 
@@ -439,6 +428,7 @@ function render() {
   attributes.size.needsUpdate = true;
   attributes.pcolor.needsUpdate = true;
 
+  //definitely a lot of problem here
   if (history.length) {
     //console.log(history)
     history.forEach(function (h, index) {
@@ -452,6 +442,7 @@ function render() {
         sparksEmitters[index][0].addCallback("updated", goToHell);
         sparksEmitters[index][1].addCallback("created", nothing);
         sparksEmitters[index][1].addCallback("updated", goToHell);
+        //removePlane(index);
       }
     });
   }
@@ -460,6 +451,29 @@ function render() {
   renderer.clear();
   composer.render(0.1);
 
+}
+
+function addPlane(index) {
+  planes[index] = new THREE.Mesh(new THREE.PlaneBufferGeometry(400, 400), new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.2
+  }));
+  planes[index].position.y = 100;
+  planes[index].position.z = -200 * index;
+  group.add(planes[index]);
+}
+
+function removePlane(index) {
+  scene.remove(planes[index]);
+  // planes[index].traverse(function (item) {
+  //     if (item instanceof THREE.Mesh) {
+  //       item.geometry.dispose();
+  //       item.material.dispose();
+  //     }
+  //   })
+  //planes[index] = null
 }
 
 function deQueue(que) {
@@ -478,24 +492,24 @@ window.onkeydown = function (e) {
   //w or up arrow
   if (e.which === 87 || e.which === 38) {
     e.preventDefault();
-    camera.position.z -= 10;
+    group.position.z += 50;
     // console.log(camera.position.z);
   }
   //s or down arrow
   if (e.which === 83 || e.which === 40) {
     e.preventDefault();
-    camera.position.z += 10;
+    group.position.z -= 50;
     // console.log(camera.position.z);
   }
-  //a or left
-  if (e.which === 65 || e.which === 37) {
-    e.preventDefault();
-    camera.position.x
-  }
-  //d or right
-  if (e.which === 68 || e.which === 39) {
+  // //a or left
+  // if (e.which === 65 || e.which === 37) {
+  //   e.preventDefault();
+  //   camera.position.x
+  // }
+  // //d or right
+  // if (e.which === 68 || e.which === 39) {
 
-  }
+  // }
 }
 
 init();
@@ -512,11 +526,13 @@ socket.on('data', function (data) {
     eye[history.length - 1] = viewportPair(deQueue(history[0]));
     addEyes(history.length - 1, 0);
     addEyes(history.length - 1, 1);
+    //addPlane(history.length - 1);
   }
   if (data[1]) {
     history.push(data[1].eye);
     addEyes(history.length - 1, 0);
     addEyes(history.length - 1, 1);
+    //addPlane(history.length - 1);
   }
   //console.log(history);
 });

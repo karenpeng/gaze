@@ -111,9 +111,12 @@ io.on('connection', function (socket) {
       }
       socket.emit('data', data);
       num += 2;
-      console.log('sent ' + num + ' ' + data);
+      //console.log('sent ' + num + ' ' + data);
       if (num > 8) return;
-      //sendEyes(num);
+      setTimeout(function () {
+        sendEyes(num);
+      }, 1000);
+
     });
   }
 
