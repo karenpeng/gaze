@@ -11,11 +11,11 @@ var speed = 50;
 
 var pointLight;
 
-var targetRotation = 0;
-var targetRotationOnMouseDown = 0;
+var targetRotationX = 0;
+var targetRotationY = 0;
 
 var mouseX = 0;
-var mouseXOnMouseDown = 0;
+var mouseY = 0;
 
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
@@ -42,11 +42,11 @@ var history = [];
 var eye = [];
 var planes = [];
 
-var MAX_NUM = 10;
+var MAX_NUM = 20;
 var SATURATION = 0.3;
 var ACCELERATION_X = 0;
 var RANDOMESS_X = 10;
-var LIFE = 3;
+var LIFE = 5;
 
 var newpos = require('./particle.js').newpos;
 var Pool = require('./particle.js').Pool;
@@ -56,10 +56,10 @@ var setTargetParticle;
 var onParticleDead;
 
 function viewportPair(pos) {
-  var x1 = ((w - pos[0][0]) / w * 2 - 1) * windowHalfX * 1.2;
-  var y1 = (-pos[0][1] / h * 2 + 1) * windowHalfX * 1.5;
-  var x2 = ((w - pos[1][0]) / w * 2 - 1) * windowHalfX * 1.2;
-  var y2 = (-pos[1][1] / h * 2 + 1) * windowHalfX * 1.5;
+  var x1 = ((w - pos[0][0]) / w * 2 - 1) * windowHalfX;
+  var y1 = (-pos[0][1] / h * 2 + 1) * windowHalfX;
+  var x2 = ((w - pos[1][0]) / w * 2 - 1) * windowHalfX;
+  var y2 = (-pos[1][1] / h * 2 + 1) * windowHalfX;
   return [
     [x1, y1],
     [x2, y2]
@@ -186,7 +186,7 @@ function init() {
       // if (hue > 0.7) hue -= 0.7;
       // break;
 
-      hue += index * 0.01 + delta * 0.0003;
+      hue += index * 0.01 + delta * 0.00003;
       if (hue < 0.6) hue += 0.6;
       if (hue > 0.7) hue -= 0.7;
       // TODO Create a PointOnShape Action/Zone in the particle engine
@@ -194,7 +194,7 @@ function init() {
       //console.log(index, eyeIndex);
       emitterpos[index][eyeIndex].x = eye[index][eyeIndex][0];
       emitterpos[index][eyeIndex].y = eye[index][eyeIndex][1];
-      emitterpos[index][eyeIndex].z = -200 * index;
+      emitterpos[index][eyeIndex].z = -300 * index;
       //console.log(emitterpos[index][eyeIndex].x)
 
     }
@@ -204,7 +204,7 @@ function init() {
     // pointLight.position.copy( emitterpos );
     pointLight.position.x = emitterpos[index][eyeIndex].x;
     pointLight.position.y = emitterpos[index][eyeIndex].y;
-    pointLight.position.z = -200 * index;
+    pointLight.position.z = -300 * index;
 
     particles.vertices[target] = p.position;
 
@@ -303,9 +303,6 @@ function init() {
   effectCopy.renderToScreen = true;
   effectFilm.renderToScreen = true;
 
-  var test = new THREE.Mesh(new THREE.SphereGeometry(2, 2, 2), new THREE.MeshNormalMaterial);
-  scene.add(test);
-
   window.addEventListener('resize', onWindowResize, false);
   document.addEventListener('mousemove', onDocumentMouseMove, false);
 
@@ -384,11 +381,11 @@ function addEyes(index, eyeIndex) {
   switch (eyeIndex) {
   case 0:
     //console.log('left')
-    sparksEmitters[index][eyeIndex].addAction(new SPARKS.Accelerate(Math.random() * -(ACCELERATION_X), 0, -20));
+    sparksEmitters[index][eyeIndex].addAction(new SPARKS.Accelerate(Math.random() * -(ACCELERATION_X), 0, -2));
     break;
   case 1:
     //console.log('right')
-    sparksEmitters[index][eyeIndex].addAction(new SPARKS.Accelerate(Math.random() * ACCELERATION_X, 0, -20));
+    sparksEmitters[index][eyeIndex].addAction(new SPARKS.Accelerate(Math.random() * ACCELERATION_X, 0, -2));
     break;
   }
 
@@ -398,6 +395,7 @@ function addEyes(index, eyeIndex) {
 function drawEyes(posL, posR, index) {
 
   if (posR[0] === -1) {
+    console.log('wat');
     sparksEmitters[index][0].addCallback("created", nothing);
     sparksEmitters[index][0].addCallback("updated", goToHell);
     setTimeout(function () {
@@ -437,7 +435,7 @@ function render() {
         var raw = h.shift();
         eye[index] = viewportPair(raw);
         //console.log(eye[index])
-        //drawEyes(eye[index][0], eye[index][1], index);
+        drawEyes(eye[index][0], eye[index][1], index);
       } else {
         sparksEmitters[index][0].addCallback("created", nothing);
         sparksEmitters[index][0].addCallback("updated", goToHell);
@@ -446,9 +444,14 @@ function render() {
         //removePlane(index);
       }
     });
+
+    group.position.z++;
+
   }
 
-  group.rotation.y += (targetRotation - group.rotation.y) * 0.05;
+  group.rotation.y += (targetRotationX - group.rotation.y) * 0.03;
+  group.rotation.x += (targetRotationY - group.rotation.x) * 0.03;
+
   renderer.clear();
   composer.render(0.1);
 
@@ -484,8 +487,10 @@ function deQueue(que) {
 function onDocumentMouseMove(event) {
 
   mouseX = event.clientX - windowHalfX;
+  mouseY = event.clientY - windowHalfY;
 
-  targetRotation = targetRotationOnMouseDown + (mouseX - mouseXOnMouseDown) * 0.02;
+  targetRotationX = mouseX * 0.001;
+  targetRotationY = mouseY * 0.001;
 
 }
 
