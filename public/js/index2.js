@@ -29,6 +29,7 @@ var effectBlurX, effectBlurY, hblur, vblur;
 
 var sparksEmitters = [];
 var emitterpos = [];
+var hue = [];
 
 var w = 100;
 var h = 75;
@@ -82,9 +83,9 @@ function init() {
   directionalLight.position.normalize();
   scene.add(directionalLight);
 
-  pointLight = new THREE.PointLight(0xffffff, 2, 300);
-  pointLight.position.set(0, 0, 0);
-  scene.add(pointLight);
+  // pointLight = new THREE.PointLight(0xffffff, 2, 300);
+  // pointLight.position.set(0, 0, 0);
+  // scene.add(pointLight);
 
   group = new THREE.Group();
   scene.add(group);
@@ -158,8 +159,6 @@ function init() {
   group.add(particleCloud);
   particleCloud.y = 800;
 
-  var hue = 0;
-
   setTargetParticle = function () {
 
     var target = Pool.get();
@@ -185,15 +184,15 @@ function init() {
       // if (hue > 0.7) hue -= 0.7;
       // break;
 
-      hue += index * 0.01 + delta * 0.00003;
-      if (hue < 0.6) hue += 0.6;
-      if (hue > 0.7) hue -= 0.7;
+      hue[index] = index * 0.04 + delta * 0.00003;
+      if (hue[index] < 0.6) hue[index] += 0.6;
+      if (hue[index] > 0.7) hue[index] -= 0.7;
       // TODO Create a PointOnShape Action/Zone in the particle engine
       //eyeIndex means left / right eye
       //console.log(index, eyeIndex);
       emitterpos[index][eyeIndex].x = eye[index][eyeIndex][0];
       emitterpos[index][eyeIndex].y = eye[index][eyeIndex][1];
-      emitterpos[index][eyeIndex].z = -400 * index;
+      emitterpos[index][eyeIndex].z = -320 * index;
       //console.log(emitterpos[index][eyeIndex].x)
 
     }
@@ -201,15 +200,15 @@ function init() {
     //console.log(eyeL[1], eyeR[1])
 
     // pointLight.position.copy( emitterpos );
-    pointLight.position.x = emitterpos[index][eyeIndex].x;
-    pointLight.position.y = emitterpos[index][eyeIndex].y;
-    pointLight.position.z = -400 * index;
+    //pointLight.position.x = emitterpos[index][eyeIndex].x;
+    //pointLight.position.y = emitterpos[index][eyeIndex].y;
+    //pointLight.position.z = -320 * index;
 
     particles.vertices[target] = p.position;
 
-    values_color[target].setHSL(hue, SATURATION, 0.1);
+    values_color[target].setHSL(hue[index], SATURATION, 0.1);
 
-    pointLight.color.setHSL(hue, SATURATION, 0.9);
+    //pointLight.color.setHSL(hue[index] , SATURATION, 0.9);
   }
 
   onParticleDead = function (particle) {
@@ -444,7 +443,7 @@ function render() {
       }
     });
 
-    group.position.z++;
+    group.position.z += 2;
 
   }
 
@@ -493,29 +492,29 @@ function onDocumentMouseMove(event) {
 
 }
 
-window.onkeydown = function (e) {
-  //w or up arrow
-  if (e.which === 87 || e.which === 38) {
-    e.preventDefault();
-    group.position.z += 50;
-    // console.log(camera.position.z);
-  }
-  //s or down arrow
-  if (e.which === 83 || e.which === 40) {
-    e.preventDefault();
-    group.position.z -= 50;
-    // console.log(camera.position.z);
-  }
-  // //a or left
-  // if (e.which === 65 || e.which === 37) {
-  //   e.preventDefault();
-  //   camera.position.x
-  // }
-  // //d or right
-  // if (e.which === 68 || e.which === 39) {
+// window.onkeydown = function (e) {
+//   //w or up arrow
+//   if (e.which === 87 || e.which === 38) {
+//     e.preventDefault();
+//     group.position.z += 50;
+//     // console.log(camera.position.z);
+//   }
+//   //s or down arrow
+//   if (e.which === 83 || e.which === 40) {
+//     e.preventDefault();
+//     group.position.z -= 50;
+//     // console.log(camera.position.z);
+//   }
+//   // //a or left
+//   // if (e.which === 65 || e.which === 37) {
+//   //   e.preventDefault();
+//   //   camera.position.x
+//   // }
+//   // //d or right
+//   // if (e.which === 68 || e.which === 39) {
 
-  // }
-}
+//   // }
+// }
 
 init();
 animate();

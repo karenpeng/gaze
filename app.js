@@ -115,7 +115,7 @@ io.on('connection', function (socket) {
       if (num > 8) return;
       setTimeout(function () {
         sendEyes(num);
-      }, 10000);
+      }, 11000);
 
     });
   }
