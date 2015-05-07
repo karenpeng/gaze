@@ -56,10 +56,10 @@ var setTargetParticle;
 var onParticleDead;
 
 function viewportPair(pos) {
-  var x1 = ((w - pos[0][0]) / w * 2 - 1) * windowHalfX;
-  var y1 = (-pos[0][1] / h * 2 + 1) * windowHalfX;
-  var x2 = ((w - pos[1][0]) / w * 2 - 1) * windowHalfX;
-  var y2 = (-pos[1][1] / h * 2 + 1) * windowHalfX;
+  var x1 = pos[0][0] === -1 ? -1 : ((w - pos[0][0]) / w * 2 - 1) * windowHalfX;
+  var y1 = pos[0][1] === -1 ? -1 : (-pos[0][1] / h * 2 + 1) * windowHalfX;
+  var x2 = pos[1][0] === -1 ? -1 : ((w - pos[1][0]) / w * 2 - 1) * windowHalfX;
+  var y2 = pos[1][1] === -1 ? -1 : (-pos[1][1] / h * 2 + 1) * windowHalfX;
   return [
     [x1, y1],
     [x2, y2]
@@ -194,7 +194,7 @@ function init() {
       //console.log(index, eyeIndex);
       emitterpos[index][eyeIndex].x = eye[index][eyeIndex][0];
       emitterpos[index][eyeIndex].y = eye[index][eyeIndex][1];
-      emitterpos[index][eyeIndex].z = -300 * index;
+      emitterpos[index][eyeIndex].z = -400 * index;
       //console.log(emitterpos[index][eyeIndex].x)
 
     }
@@ -204,7 +204,7 @@ function init() {
     // pointLight.position.copy( emitterpos );
     pointLight.position.x = emitterpos[index][eyeIndex].x;
     pointLight.position.y = emitterpos[index][eyeIndex].y;
-    pointLight.position.z = -300 * index;
+    pointLight.position.z = -400 * index;
 
     particles.vertices[target] = p.position;
 
