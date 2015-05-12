@@ -102,7 +102,6 @@ io.on('connection', function (socket) {
       }
       socket.emit('data', data);
       num++;
-      console.log('sent ' + num + ' ' + data);
       if (data === null) return;
       setTimeout(function () {
         sendEyes(num);

@@ -470,7 +470,6 @@ socket.on('hello', function () {
     $('#hint').fadeOut();
     socket.emit('request');
   }, 4000);
-
 });
 
 socket.on('data', function (data) {
