@@ -53,6 +53,10 @@ function initCam() {
 initCam();
 
 function startVideo() {
+  $('#welcome').fadeIn('slow');
+  setTimeout(function () {
+    $('#welcome').fadeOut();
+  }, 3000);
   // start video
   vid.play();
   // start tracking

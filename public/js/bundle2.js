@@ -9,8 +9,6 @@ var group, plane;
 
 var speed = 50;
 
-var pointLight;
-
 var targetRotationX = 0;
 var targetRotationY = 0;
 
@@ -41,7 +39,7 @@ var nothing, goToHell;
 
 var history = [];
 var eye = [];
-var planes = [];
+var start = [];
 
 var MAX_NUM = 20;
 var SATURATION = 0.3;
@@ -56,11 +54,15 @@ var attributes = require('./particle.js').attributes;
 var setTargetParticle;
 var onParticleDead;
 
+var ZGAP = 500;
+
 function viewportPair(pos) {
   var x1 = pos[0][0] === -1 ? -1 : ((w - pos[0][0]) / w * 2 - 1) * windowHalfX;
   var y1 = pos[0][1] === -1 ? -1 : (-pos[0][1] / h * 2 + 1) * windowHalfX;
   var x2 = pos[1][0] === -1 ? -1 : ((w - pos[1][0]) / w * 2 - 1) * windowHalfX;
   var y2 = pos[1][1] === -1 ? -1 : (-pos[1][1] / h * 2 + 1) * windowHalfX;
+
+  if (x1 === 0 || x2 === 0 || y1 === 0 || y2 === 0) console.log('meow');
   return [
     [x1, y1],
     [x2, y2]
@@ -83,10 +85,6 @@ function init() {
   directionalLight.position.set(0, -1, 1);
   directionalLight.position.normalize();
   scene.add(directionalLight);
-
-  // pointLight = new THREE.PointLight(0xffffff, 2, 300);
-  // pointLight.position.set(0, 0, 0);
-  // scene.add(pointLight);
 
   group = new THREE.Group();
   scene.add(group);
@@ -185,31 +183,24 @@ function init() {
       // if (hue > 0.7) hue -= 0.7;
       // break;
 
-      hue[index] = index * 0.04 + delta * 0.00003;
+      hue[index] = index * 0.04 + delta * 0.00001;
       if (hue[index] < 0.6) hue[index] += 0.6;
       if (hue[index] > 0.7) hue[index] -= 0.7;
       // TODO Create a PointOnShape Action/Zone in the particle engine
       //eyeIndex means left / right eye
       //console.log(index, eyeIndex);
+      //if (eye[index][eyeIndex][0] === 0 || eye[index][eyeIndex][1] === 0) console.log('meow');
+
       emitterpos[index][eyeIndex].x = eye[index][eyeIndex][0];
       emitterpos[index][eyeIndex].y = eye[index][eyeIndex][1];
-      emitterpos[index][eyeIndex].z = -320 * index;
+      emitterpos[index][eyeIndex].z = -ZGAP * index;
       //console.log(emitterpos[index][eyeIndex].x)
 
     }
 
-    //console.log(eyeL[1], eyeR[1])
-
-    // pointLight.position.copy( emitterpos );
-    //pointLight.position.x = emitterpos[index][eyeIndex].x;
-    //pointLight.position.y = emitterpos[index][eyeIndex].y;
-    //pointLight.position.z = -320 * index;
-
     particles.vertices[target] = p.position;
 
     values_color[target].setHSL(hue[index], SATURATION, 0.1);
-
-    //pointLight.color.setHSL(hue[index] , SATURATION, 0.9);
   }
 
   onParticleDead = function (particle) {
@@ -343,7 +334,6 @@ function animate() {
     render();
   }
 
-  //controls.update();
   stats.update();
 
 }
@@ -394,7 +384,6 @@ function addEyes(index, eyeIndex) {
 function drawEyes(posL, posR, index) {
 
   if (posR[0] === -1) {
-    console.log('wat');
     sparksEmitters[index][0].addCallback("created", nothing);
     sparksEmitters[index][0].addCallback("updated", goToHell);
     setTimeout(function () {
@@ -433,19 +422,19 @@ function render() {
       if (h.length) {
         var raw = h.shift();
         eye[index] = viewportPair(raw);
-        //console.log(eye[index])
         drawEyes(eye[index][0], eye[index][1], index);
       } else {
         sparksEmitters[index][0].addCallback("created", nothing);
         sparksEmitters[index][0].addCallback("updated", goToHell);
         sparksEmitters[index][1].addCallback("created", nothing);
         sparksEmitters[index][1].addCallback("updated", goToHell);
-        //removePlane(index);
       }
     });
 
     group.position.z += 2;
 
+  } else {
+    console.log('wat');
   }
 
   group.rotation.y += (targetRotationX - group.rotation.y) * 0.03;
@@ -454,29 +443,6 @@ function render() {
   renderer.clear();
   composer.render(0.1);
 
-}
-
-function addPlane(index) {
-  planes[index] = new THREE.Mesh(new THREE.PlaneBufferGeometry(400, 400), new THREE.MeshBasicMaterial({
-    color: 0xffffff,
-    side: THREE.DoubleSide,
-    transparent: true,
-    opacity: 0.2
-  }));
-  planes[index].position.y = 100;
-  planes[index].position.z = -200 * index;
-  group.add(planes[index]);
-}
-
-function removePlane(index) {
-  scene.remove(planes[index]);
-  // planes[index].traverse(function (item) {
-  //     if (item instanceof THREE.Mesh) {
-  //       item.geometry.dispose();
-  //       item.material.dispose();
-  //     }
-  //   })
-  //planes[index] = null
 }
 
 function deQueue(que) {
@@ -493,53 +459,41 @@ function onDocumentMouseMove(event) {
 
 }
 
-// window.onkeydown = function (e) {
-//   //w or up arrow
-//   if (e.which === 87 || e.which === 38) {
-//     e.preventDefault();
-//     group.position.z += 50;
-//     // console.log(camera.position.z);
-//   }
-//   //s or down arrow
-//   if (e.which === 83 || e.which === 40) {
-//     e.preventDefault();
-//     group.position.z -= 50;
-//     // console.log(camera.position.z);
-//   }
-//   // //a or left
-//   // if (e.which === 65 || e.which === 37) {
-//   //   e.preventDefault();
-//   //   camera.position.x
-//   // }
-//   // //d or right
-//   // if (e.which === 68 || e.which === 39) {
-
-//   // }
-// }
-
 init();
 animate();
 
 socket.on('hello', function () {
   console.log('hello back');
-  socket.emit('request');
+  setTimeout(function () {
+    $('#hint').fadeIn('slow');
+  }, 1000);
+  setTimeout(function () {
+    $('#hint').fadeOut();
+    socket.emit('request');
+  }, 4000);
+
 });
 
 socket.on('data', function (data) {
-  if (data[0]) {
-    history.push(data[0].eye);
-    eye[history.length - 1] = viewportPair(deQueue(history[0]));
-    addEyes(history.length - 1, 0);
-    addEyes(history.length - 1, 1);
-    //addPlane(history.length - 1);
-  }
-  if (data[1]) {
-    history.push(data[1].eye);
-    addEyes(history.length - 1, 0);
-    addEyes(history.length - 1, 1);
-    //addPlane(history.length - 1);
-  }
+  // if (data[0]) {
+  //   history.push(data[0].eye);
+  //   eye[history.length - 1] = viewportPair(deQueue(history[history.length - 1]));
+  //   addEyes(history.length - 1, 0);
+  //   addEyes(history.length - 1, 1);
+  // }
+  // if (data[1]) {
+  //   history.push(data[1].eye);
+  //   eye[history.length - 1] = viewportPair(deQueue(history[history.length - 1]));
+  //   addEyes(history.length - 1, 0);
+  //   addEyes(history.length - 1, 1);
+  // }
   //console.log(history);
+  console.log('get one pair of eyes');
+  history.push(data.eye);
+  eye[history.length - 1] = viewportPair(deQueue(history[history.length - 1]));
+  console.log(eye[history.length - 1]);
+  addEyes(history.length - 1, 0);
+  addEyes(history.length - 1, 1);
 });
 },{"./particle.js":"/Users/karen/Documents/my_project/gaze/public/js/particle.js"}],"/Users/karen/Documents/my_project/gaze/public/js/particle.js":[function(require,module,exports){
 var RADIUS = 40;

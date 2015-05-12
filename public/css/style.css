@@ -4,9 +4,27 @@ html, body{
   margin: 0;
   padding: 0;
   overflow: hidden;
+  font-family: 'Open Sans Condensed', sans-serif;
 }
 #container{
   position: absolute;
   top: 0;
   left: 0;
+}
+.instruction{
+  position: absolute;
+  color: white;
+  z-index: 10;
+  text-align: center;
+  left: 50%;
+  width: 1000px;
+  margin-left: -500px;
+  bottom: 50%;
+  display: none;
+}
+#browse{
+  padding: 3px 40px;
+  border: solid 1px white;
+  color: white;
+  text-decoration: none;
 }

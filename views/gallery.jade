@@ -2,6 +2,8 @@ extends layout
 h1 #{eye}
 block links
   link(rel="stylesheet" type="text/css" href="./css/gallery.css")
+block doms
+  p#hint.instruction Move mouse to look around
 block scripts
   script(type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js")
   script(type="text/javascript" src="./js/bundle2.js")

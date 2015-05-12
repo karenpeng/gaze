@@ -9,8 +9,6 @@ var group, plane;
 
 var speed = 50;
 
-var pointLight;
-
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
 
@@ -87,10 +85,6 @@ function init() {
   directionalLight.position.set(0, -1, 1);
   directionalLight.position.normalize();
   scene.add(directionalLight);
-
-  pointLight = new THREE.PointLight(0xffffff, 2, 300);
-  pointLight.position.set(0, 0, 0);
-  scene.add(pointLight);
 
   group = new THREE.Group();
   scene.add(group);
@@ -213,18 +207,9 @@ function init() {
         break;
       }
 
-      //console.log(eyeL[1], eyeR[1])
-
-      // pointLight.position.copy( emitterpos );
-      pointLight.position.x = emitterpos.x;
-      pointLight.position.y = emitterpos.y;
-      pointLight.position.z = 100;
-
       particles.vertices[target] = p.position;
 
       values_color[target].setHSL(hue, SATURATION, 0.1);
-
-      pointLight.color.setHSL(hue, SATURATION, 0.9);
 
     };
   }
@@ -369,8 +354,6 @@ function onWindowResize() {
 
   renderer.setSize(window.innerWidth, window.innerHeight);
 
-  //
-
   hblur.uniforms['h'].value = 1 / window.innerWidth;
   vblur.uniforms['v'].value = 1 / window.innerHeight;
 
@@ -385,10 +368,6 @@ function onWindowResize() {
 
 }
 
-//
-
-// document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-
 function animate() {
 
   if (keepLooping) {
@@ -401,7 +380,6 @@ function animate() {
     render();
   }
 
-  //controls.update();
   stats.update();
 
 }
@@ -479,6 +457,12 @@ function render() {
         sparksEmitter.addCallback("updated", goToHell);
       });
 
+      setTimeout(function () {
+        $('#other').fadeIn('slow');
+      }, 3000);
+      setTimeout(function () {
+        $('#other').fadeOut();
+      }, 6000);
     }
 
     if (startOther && othersRecords.length) {
@@ -495,8 +479,12 @@ function render() {
       });
       require('./track.js').ctrack.stop();
       setTimeout(function () {
-        keepLooping = false
-      }, 6000);
+        keepLooping = false;
+      }, 1000);
+      setTimeout(function () {
+        $('#history').fadeIn('slow');
+      }, 3000);
+
     }
 
     if (recordCountDown > beginRecord && recordCountDown <= endRecord) {
@@ -518,6 +506,7 @@ function render() {
         success: function (data) {
           othersRecords = data.eye;
           //console.log(othersRecords);
+          console.log('get other eyes')
           startOther = true;
         }
       });
@@ -765,6 +754,10 @@ function initCam() {
 initCam();
 
 function startVideo() {
+  $('#welcome').fadeIn('slow');
+  setTimeout(function () {
+    $('#welcome').fadeOut();
+  }, 3000);
   // start video
   vid.play();
   // start tracking

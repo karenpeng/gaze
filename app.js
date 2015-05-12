@@ -75,8 +75,6 @@ function turnPage(num) {
       "date": -1
     }
   };
-
-  //stackoverflow??? why??????
   return Record.findOne(query, selet, option, function (err, data) {
     if (err) {
       return console.error(err);
@@ -88,34 +86,27 @@ function turnPage(num) {
 io.on('connection', function (socket) {
   socket.emit('hello');
 
-  //TODO: get the total of records
-
-  // var total = Record.count({}, function (c) {
-  //   console.log(c);
-  // });
-  //console.log(total);
-
   function sendEyes(num) {
     var query = {};
     var selet = 'eye';
     var option = {
       skip: num,
-      limit: 2,
+      limit: 1,
       sort: {
         "date": -1
       }
     };
-    Record.find(query, selet, option, function (err, data) {
+    Record.findOne(query, selet, option, function (err, data) {
       if (err) {
         return console.error(err);
       }
       socket.emit('data', data);
-      num += 2;
-      //console.log('sent ' + num + ' ' + data);
-      if (num > 8) return;
+      num++;
+      console.log('sent ' + num + ' ' + data);
+      if (data === null) return;
       setTimeout(function () {
         sendEyes(num);
-      }, 11000);
+      }, 3000);
 
     });
   }

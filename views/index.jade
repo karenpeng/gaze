@@ -3,6 +3,13 @@ block links
   link(rel="stylesheet" type="text/css" href="./css/index.css")
 block doms
   video(id="videoel" width="100" height="75" preload="auto" loop)
+  p#welcome.instruction Please stare at the screen
+  p#other.instruction Hey, somebody is saying hi to you...
+  #history.instruction
+    p What you saw is actually the last person stared at this website
+    p When you were staring at this person your gaze is being recorded as well
+    p You could click here to browse the entire gaze history (the first person is you)
+    a(href="./gallery")#browse Gaze History
   p(id="progress")
 block scripts
   script(type="text/javascript" src="./js/vendor/three/utils.js")
